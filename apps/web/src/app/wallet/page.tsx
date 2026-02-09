@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMode } from '@/contexts/ModeContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '@/lib/api';
 
 export default function WalletPage() {
   const { user, refreshUser } = useAuth();
   const { mode, isDemoMode } = useMode();
+  const { t } = useLanguage();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [withdrawAmount, setWithdrawAmount] = useState('');
@@ -22,10 +24,10 @@ export default function WalletPage() {
     api.wallet.withdrawals().then(setWithdrawals).catch(console.error);
   }, []);
 
-  if (!user) return <p>Please log in.</p>;
+  if (!user) return <p className="dark:text-gray-400">{t('dash.pleaseLogin')}</p>;
 
   const balance = isDemoMode ? user.demoBalance : user.realBalance;
-  const filteredTx = transactions.filter((t) => t.walletMode === mode);
+  const filteredTx = transactions.filter((tx) => tx.walletMode === mode);
 
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,25 +52,27 @@ export default function WalletPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Wallet</h1>
+      <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">{t('wallet.title')}</h1>
 
       {/* Balance */}
-      <div className={`p-6 rounded-lg border mb-6 ${isDemoMode ? 'bg-purple-50 border-purple-200' : 'bg-green-50 border-green-200'}`}>
-        <div className="text-sm text-gray-600 mb-1">{isDemoMode ? 'Demo' : 'Real'} Balance</div>
-        <div className="text-3xl font-bold">${(balance / 100).toFixed(2)}</div>
-        <div className="text-sm text-gray-500 mt-1">{balance.toLocaleString()} credits</div>
+      <div className={`p-6 rounded-lg border mb-6 ${isDemoMode ? 'bg-purple-50 dark:bg-demo/10 border-purple-200 dark:border-demo/30' : 'bg-green-50 dark:bg-real/10 border-green-200 dark:border-real/30'}`}>
+        <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+          {isDemoMode ? t('dash.demoBalance') : t('dash.realBalance')}
+        </div>
+        <div className="text-3xl font-bold text-gray-900 dark:text-white">${(balance / 100).toFixed(2)}</div>
+        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{balance.toLocaleString()} {t('wallet.credits')}</div>
       </div>
 
       {/* Withdrawal Form (Real mode only) */}
       {!isDemoMode && (
-        <div className="bg-white rounded-lg border p-4 mb-6">
-          <h3 className="font-semibold mb-3">Request Withdrawal</h3>
-          {error && <div className="bg-red-50 text-red-700 text-sm p-2 rounded mb-3">{error}</div>}
-          {success && <div className="bg-green-50 text-green-700 text-sm p-2 rounded mb-3">{success}</div>}
+        <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-4 mb-6">
+          <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">{t('wallet.withdraw')}</h3>
+          {error && <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm p-2 rounded mb-3">{error}</div>}
+          {success && <div className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm p-2 rounded mb-3">{success}</div>}
 
           <form onSubmit={handleWithdraw} className="space-y-3">
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Amount (USD)</label>
+              <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">{t('wallet.amount')}</label>
               <input
                 type="number"
                 min="10"
@@ -76,69 +80,69 @@ export default function WalletPage() {
                 value={withdrawAmount}
                 onChange={(e) => setWithdrawAmount(e.target.value)}
                 required
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-                placeholder="Min $10"
+                className="w-full border border-gray-300 dark:border-surface-dark-3 dark:bg-surface-dark rounded px-3 py-2 text-sm dark:text-white"
+                placeholder={t('wallet.minAmount')}
               />
               {withdrawAmount && (
                 <p className="text-xs text-gray-400 mt-1">
-                  Fee (1%): ${(parseFloat(withdrawAmount) * 0.01).toFixed(2)} &middot;
-                  Net: ${(parseFloat(withdrawAmount) * 0.99).toFixed(2)}
+                  {t('wallet.fee')} (1%): ${(parseFloat(withdrawAmount) * 0.01).toFixed(2)} &middot;
+                  {t('wallet.net')}: ${(parseFloat(withdrawAmount) * 0.99).toFixed(2)}
                 </p>
               )}
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Polygon Wallet Address</label>
+              <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">{t('wallet.walletAddress')}</label>
               <input
                 type="text"
                 value={walletAddress}
                 onChange={(e) => setWalletAddress(e.target.value)}
                 required
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm font-mono"
+                className="w-full border border-gray-300 dark:border-surface-dark-3 dark:bg-surface-dark rounded px-3 py-2 text-sm font-mono dark:text-white"
                 placeholder="0x..."
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="bg-brand-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-brand-700 disabled:opacity-50"
+              className="bg-brand-500 text-white px-4 py-2 rounded text-sm font-medium hover:bg-brand-600 disabled:opacity-50"
             >
-              {loading ? 'Processing...' : 'Request Withdrawal'}
+              {loading ? t('wallet.processing') : t('wallet.submitWithdraw')}
             </button>
           </form>
         </div>
       )}
 
       {isDemoMode && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-sm text-yellow-800">
-          Demo credits cannot be withdrawn. Switch to Real mode to manage real credits.
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6 text-sm text-yellow-800 dark:text-yellow-300">
+          {t('wallet.demoWarning')}
         </div>
       )}
 
       {/* Tabs */}
-      <div className="flex gap-4 border-b mb-4">
+      <div className="flex gap-4 border-b border-gray-200 dark:border-surface-dark-3 mb-4">
         <button
           onClick={() => setTab('transactions')}
-          className={`pb-2 text-sm font-medium ${tab === 'transactions' ? 'border-b-2 border-brand-600 text-brand-600' : 'text-gray-500'}`}
+          className={`pb-2 text-sm font-medium ${tab === 'transactions' ? 'border-b-2 border-brand-500 text-brand-500' : 'text-gray-500 dark:text-gray-400'}`}
         >
-          Transactions
+          {t('wallet.transactions')}
         </button>
         <button
           onClick={() => setTab('withdrawals')}
-          className={`pb-2 text-sm font-medium ${tab === 'withdrawals' ? 'border-b-2 border-brand-600 text-brand-600' : 'text-gray-500'}`}
+          className={`pb-2 text-sm font-medium ${tab === 'withdrawals' ? 'border-b-2 border-brand-500 text-brand-500' : 'text-gray-500 dark:text-gray-400'}`}
         >
-          Withdrawals
+          {t('wallet.withdrawals')}
         </button>
       </div>
 
       {tab === 'transactions' && (
-        <div className="bg-white rounded-lg border divide-y">
+        <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 divide-y divide-gray-200 dark:divide-surface-dark-3">
           {filteredTx.length === 0 ? (
-            <p className="p-4 text-sm text-gray-500">No transactions yet.</p>
+            <p className="p-4 text-sm text-gray-500 dark:text-gray-400">{t('wallet.noTx')}</p>
           ) : (
             filteredTx.map((tx) => (
               <div key={tx.transactionId} className="px-4 py-3 flex justify-between items-center">
                 <div>
-                  <div className="text-sm">{tx.description}</div>
+                  <div className="text-sm text-gray-900 dark:text-white">{tx.description}</div>
                   <div className="text-xs text-gray-400">{new Date(tx.createdAt).toLocaleString()}</div>
                 </div>
                 <div className={`text-sm font-semibold ${tx.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -151,18 +155,18 @@ export default function WalletPage() {
       )}
 
       {tab === 'withdrawals' && (
-        <div className="bg-white rounded-lg border divide-y">
+        <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 divide-y divide-gray-200 dark:divide-surface-dark-3">
           {withdrawals.length === 0 ? (
-            <p className="p-4 text-sm text-gray-500">No withdrawals yet.</p>
+            <p className="p-4 text-sm text-gray-500 dark:text-gray-400">{t('wallet.noWithdrawals')}</p>
           ) : (
             withdrawals.map((w) => (
               <div key={w.withdrawalId} className="px-4 py-3">
                 <div className="flex justify-between">
-                  <div className="text-sm font-medium">${w.netUSDC} USDC</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">${w.netUSDC} USDC</div>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    w.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                    w.status === 'SENT' ? 'bg-green-100 text-green-800' :
-                    'bg-gray-100 text-gray-800'
+                    w.status === 'PENDING' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                    w.status === 'SENT' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                    'bg-gray-100 dark:bg-surface-dark-3 text-gray-800 dark:text-gray-300'
                   }`}>
                     {w.status}
                   </span>
@@ -178,11 +182,11 @@ export default function WalletPage() {
       )}
 
       {/* Referral section */}
-      <div className="mt-6 bg-white rounded-lg border p-4">
-        <h3 className="font-semibold mb-2">Your Referral Code</h3>
-        <div className="text-lg font-mono font-bold text-brand-600">{user.referralCode}</div>
-        <p className="text-xs text-gray-500 mt-1">
-          Share this code. When someone signs up and makes their first real deposit, you both earn $5 in real credits.
+      <div className="mt-6 bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-4">
+        <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">{t('wallet.referralTitle')}</h3>
+        <div className="text-lg font-mono font-bold text-brand-500">{user.referralCode}</div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          {t('wallet.referralHint')}
         </p>
       </div>
     </div>

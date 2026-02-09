@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '@/lib/api';
 import SpinWheel from '@/components/SpinWheel';
 import ConfirmModal from '@/components/ConfirmModal';
@@ -10,6 +11,7 @@ import ConfirmModal from '@/components/ConfirmModal';
 export default function RoomDetail() {
   const { id } = useParams<{ id: string }>();
   const { user, refreshUser } = useAuth();
+  const { t } = useLanguage();
   const [draw, setDraw] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
@@ -55,8 +57,8 @@ export default function RoomDetail() {
     }
   };
 
-  if (loading) return <p className="text-gray-500">Loading draw...</p>;
-  if (!draw) return <p className="text-red-500">Draw not found.</p>;
+  if (loading) return <p className="text-gray-500 dark:text-gray-400">{t('room.loading')}</p>;
+  if (!draw) return <p className="text-red-500">{t('room.notFound')}</p>;
 
   const participants = Object.values(draw.participantUsernames || {}) as string[];
   const hasJoined = user && draw.participants?.includes(user.userId);
@@ -70,24 +72,26 @@ export default function RoomDetail() {
     <div className="max-w-2xl mx-auto">
       <div className="flex justify-between items-start mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Room #{draw.drawId.slice(0, 8)}</h1>
-          <p className="text-gray-500 text-sm">
-            {draw.totalSlots} slots &middot; ${draw.entryDollars} entry &middot; {draw.mode} mode
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            {t('room.title')} #{draw.drawId.slice(0, 8)}
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
+            {draw.totalSlots} {t('rooms.slots')} &middot; ${draw.entryDollars} {t('rooms.entry')} &middot; {draw.mode} {t('room.mode')}
           </p>
         </div>
         <span className={`text-sm font-medium px-3 py-1 rounded-full ${
-          draw.status === 'OPEN' ? 'bg-green-100 text-green-800' :
-          draw.status === 'COUNTDOWN' ? 'bg-orange-100 text-orange-800' :
-          draw.status === 'RUNNING' ? 'bg-blue-100 text-blue-800' :
-          draw.status === 'COMPLETED' ? 'bg-gray-100 text-gray-800' :
-          'bg-yellow-100 text-yellow-800'
+          draw.status === 'OPEN' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+          draw.status === 'COUNTDOWN' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300' :
+          draw.status === 'RUNNING' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
+          draw.status === 'COMPLETED' ? 'bg-gray-100 dark:bg-surface-dark-3 text-gray-800 dark:text-gray-300' :
+          'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
         }`}>
           {draw.status}
         </span>
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-700 text-sm p-3 rounded mb-4">{error}</div>
+        <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm p-3 rounded mb-4">{error}</div>
       )}
 
       <div className="flex justify-center mb-6">
@@ -103,11 +107,11 @@ export default function RoomDetail() {
       )}
 
       {draw.status === 'COMPLETED' && draw.winnerUsername && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center mb-6">
-          <p className="text-sm text-yellow-800">Selected User</p>
-          <p className="text-xl font-bold text-yellow-900">{draw.winnerUsername}</p>
-          <p className="text-sm text-yellow-700">
-            Prize: ${(draw.prize / 100).toFixed(2)} USD
+        <div className="bg-accent-gold/10 border border-accent-gold/30 rounded-lg p-4 text-center mb-6">
+          <p className="text-sm text-accent-orange">{t('room.selectedUser')}</p>
+          <p className="text-xl font-bold text-gray-900 dark:text-white">{draw.winnerUsername}</p>
+          <p className="text-sm text-accent-orange">
+            {t('room.prize')}: ${(draw.prize / 100).toFixed(2)} USD
           </p>
         </div>
       )}
@@ -116,21 +120,21 @@ export default function RoomDetail() {
         <button
           onClick={() => setShowConfirm(true)}
           disabled={joining}
-          className="w-full bg-brand-600 text-white py-3 rounded-lg font-medium hover:bg-brand-700 disabled:opacity-50 mb-6"
+          className="w-full bg-room text-white py-3 rounded-lg font-medium hover:bg-room-dark disabled:opacity-50 mb-6"
         >
-          {joining ? 'Joining...' : `Participate - $${draw.entryDollars}`}
+          {joining ? t('room.joining') : `${t('room.participate')} - $${draw.entryDollars}`}
         </button>
       )}
 
       {hasJoined && draw.status !== 'COMPLETED' && (
-        <div className="bg-blue-50 text-blue-700 text-sm p-3 rounded mb-6 text-center">
-          You are participating in this draw.
+        <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-sm p-3 rounded mb-6 text-center">
+          {t('room.joined')}
         </div>
       )}
 
-      <div className="bg-white rounded-lg border p-4 mb-6">
-        <h3 className="font-semibold mb-3">
-          Participants ({draw.filledSlots}/{draw.totalSlots})
+      <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-4 mb-6">
+        <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">
+          {t('room.participants')} ({draw.filledSlots}/{draw.totalSlots})
         </h3>
         <div className="grid grid-cols-2 gap-2">
           {Array.from({ length: draw.totalSlots }).map((_, i) => {
@@ -142,54 +146,54 @@ export default function RoomDetail() {
                 className={`text-sm px-3 py-2 rounded ${
                   name
                     ? uid === draw.winnerId
-                      ? 'bg-yellow-100 text-yellow-800 font-medium'
-                      : 'bg-gray-100 text-gray-800'
-                    : 'bg-gray-50 text-gray-400 border border-dashed border-gray-200'
+                      ? 'bg-accent-gold/20 text-accent-orange font-medium'
+                      : 'bg-gray-100 dark:bg-surface-dark-3 text-gray-800 dark:text-gray-300'
+                    : 'bg-gray-50 dark:bg-surface-dark text-gray-400 border border-dashed border-gray-200 dark:border-surface-dark-3'
                 }`}
               >
-                {name || `Slot ${i + 1} - Open`}
+                {name || `${t('room.slotOpen').replace('Slot', `Slot ${i + 1}`).replace('Lugar', `Lugar ${i + 1}`)}`}
               </div>
             );
           })}
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border p-4 mb-6">
-        <h3 className="font-semibold mb-3">Draw Details</h3>
+      <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-4 mb-6">
+        <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">{t('room.drawDetails')}</h3>
         <dl className="grid grid-cols-2 gap-2 text-sm">
-          <dt className="text-gray-500">Pool</dt>
-          <dd className="font-medium">${(draw.pool / 100).toFixed(2)}</dd>
-          <dt className="text-gray-500">Fee ({draw.feePercent}%)</dt>
-          <dd className="font-medium">${(draw.fee / 100).toFixed(2)}</dd>
-          <dt className="text-gray-500">Prize</dt>
-          <dd className="font-medium">${(draw.prize / 100).toFixed(2)}</dd>
-          <dt className="text-gray-500">Created</dt>
-          <dd>{new Date(draw.createdAt).toLocaleString()}</dd>
+          <dt className="text-gray-500 dark:text-gray-400">{t('room.pool')}</dt>
+          <dd className="font-medium text-gray-900 dark:text-white">${(draw.pool / 100).toFixed(2)}</dd>
+          <dt className="text-gray-500 dark:text-gray-400">{t('room.fee')} ({draw.feePercent}%)</dt>
+          <dd className="font-medium text-gray-900 dark:text-white">${(draw.fee / 100).toFixed(2)}</dd>
+          <dt className="text-gray-500 dark:text-gray-400">{t('room.prize')}</dt>
+          <dd className="font-medium text-gray-900 dark:text-white">${(draw.prize / 100).toFixed(2)}</dd>
+          <dt className="text-gray-500 dark:text-gray-400">{t('room.created')}</dt>
+          <dd className="text-gray-900 dark:text-white">{new Date(draw.createdAt).toLocaleString()}</dd>
         </dl>
       </div>
 
       {draw.status === 'COMPLETED' && draw.commitHash && (
-        <div className="bg-white rounded-lg border p-4">
-          <h3 className="font-semibold mb-3">Fairness Verification</h3>
+        <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-4">
+          <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">{t('room.fairness')}</h3>
           <dl className="text-xs font-mono space-y-2 break-all">
-            <dt className="text-gray-500 text-sm font-sans">Commit Hash</dt>
-            <dd>{draw.commitHash}</dd>
-            <dt className="text-gray-500 text-sm font-sans">Public Seed</dt>
-            <dd>{draw.publicSeed}</dd>
-            <dt className="text-gray-500 text-sm font-sans">Server Seed (revealed)</dt>
-            <dd>{draw.revealedServerSeed}</dd>
+            <dt className="text-gray-500 dark:text-gray-400 text-sm font-sans">{t('room.commitHash')}</dt>
+            <dd className="text-gray-900 dark:text-gray-300">{draw.commitHash}</dd>
+            <dt className="text-gray-500 dark:text-gray-400 text-sm font-sans">{t('room.publicSeed')}</dt>
+            <dd className="text-gray-900 dark:text-gray-300">{draw.publicSeed}</dd>
+            <dt className="text-gray-500 dark:text-gray-400 text-sm font-sans">{t('room.serverSeed')}</dt>
+            <dd className="text-gray-900 dark:text-gray-300">{draw.revealedServerSeed}</dd>
           </dl>
           <p className="text-xs text-gray-400 mt-3">
-            Verify: SHA256(serverSeed + publicSeed) should equal the commit hash.
+            {t('room.verifyHint')}
           </p>
         </div>
       )}
 
       <ConfirmModal
         open={showConfirm}
-        title="Confirm Participation"
-        message={`You are about to join this draw for $${draw.entryDollars} (${draw.entryCredits} credits). Once you join, you cannot exit or cancel. Do you want to proceed?`}
-        confirmLabel="Yes, Participate"
+        title={t('confirm.title')}
+        message={`${t('confirm.message').replace('${amount}', `$${draw.entryDollars}`).replace('${credits}', draw.entryCredits)}`}
+        confirmLabel={t('confirm.yes')}
         onConfirm={handleJoin}
         onCancel={() => setShowConfirm(false)}
       />
@@ -211,9 +215,9 @@ function CountdownTimer({ endsAt }: { endsAt: string }) {
   }, [endsAt]);
 
   return (
-    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center mb-6">
-      <p className="text-sm text-orange-700">Drawing in</p>
-      <p className="text-3xl font-bold text-orange-900">{seconds}s</p>
+    <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 text-center mb-6">
+      <p className="text-sm text-orange-700 dark:text-orange-300">Drawing in</p>
+      <p className="text-3xl font-bold text-orange-900 dark:text-orange-200">{seconds}s</p>
     </div>
   );
 }

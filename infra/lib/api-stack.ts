@@ -1,10 +1,9 @@
 import * as cdk from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as lambdaNode from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
-import * as iam from 'aws-cdk-lib/aws-iam';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as events from 'aws-cdk-lib/aws-events';
-import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 import { Tables } from './database-stack';
 import { Queues } from './messaging-stack';
@@ -45,19 +44,24 @@ export class ApiStack extends cdk.Stack {
       generateSecretString: { excludePunctuation: true, passwordLength: 64 },
     });
 
-    // Lambda function (single function wrapping Express via serverless-http)
-    const apiHandler = new lambda.Function(this, 'ApiHandler', {
+    // Lambda function using NodejsFunction (auto-bundles with esbuild)
+    const apiHandler = new lambdaNode.NodejsFunction(this, 'ApiHandler', {
       runtime: lambda.Runtime.NODEJS_18_X,
-      handler: 'lambda.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../apps/api/dist')),
+      entry: path.join(__dirname, '../../apps/api/src/lambda.ts'),
+      handler: 'handler',
       timeout: cdk.Duration.seconds(30),
       memorySize: 512,
+      bundling: {
+        minify: true,
+        sourceMap: true,
+        externalModules: ['@aws-sdk/*'],
+        forceDockerBundling: false,
+      },
       environment: {
         NODE_ENV: 'lambda',
         STAGE: props.stage,
         TABLE_PREFIX: props.prefix,
         JWT_SECRET: jwtSecret.secretValue.unsafeUnwrap(),
-        AWS_REGION_CUSTOM: props.env?.region || 'us-east-1',
         SES_FROM_EMAIL: 'noreply@sortyapp.com',
         EMAIL_QUEUE_URL: props.queues.emailQueue.queueUrl,
         TX_VERIFICATION_QUEUE_URL: props.queues.txVerificationQueue.queueUrl,
@@ -94,7 +98,7 @@ export class ApiStack extends cdk.Stack {
     });
 
     // Proxy all requests to Lambda
-    const proxyResource = api.root.addProxy({
+    api.root.addProxy({
       defaultIntegration: new apigateway.LambdaIntegration(apiHandler),
       anyMethod: true,
     });

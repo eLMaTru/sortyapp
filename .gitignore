@@ -13,3 +13,9 @@ cdk.out/
 *.log
 coverage/
 .dynamodb/
+
+# Reference images (design assets, not code)
+imagenes-a/
+
+# Claude Code local settings
+.claude/

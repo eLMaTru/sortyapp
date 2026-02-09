@@ -8,10 +8,11 @@ interface SpinWheelProps {
   spinning: boolean;
 }
 
+// Brand colors from the reference images: blue, red, green, orange quadrants
 const COLORS = [
-  '#3B82F6', '#EF4444', '#10B981', '#F59E0B',
-  '#8B5CF6', '#EC4899', '#06B6D4', '#F97316',
-  '#14B8A6', '#6366F1',
+  '#0066FF', '#FF3333', '#00CC00', '#FFA500',
+  '#5555FF', '#EC4899', '#00CCCC', '#F97316',
+  '#8B5CF6', '#FFCC00',
 ];
 
 export default function SpinWheel({ participants, winnerIndex, spinning }: SpinWheelProps) {
@@ -56,23 +57,33 @@ export default function SpinWheel({ participants, winnerIndex, spinning }: SpinW
       ctx.restore();
     }
 
-    // Center circle
+    // Center circle with $ sign (matching logo)
     ctx.beginPath();
-    ctx.arc(center, center, 20, 0, 2 * Math.PI);
+    ctx.arc(center, center, 24, 0, 2 * Math.PI);
     ctx.fillStyle = '#fff';
     ctx.fill();
-    ctx.strokeStyle = '#374151';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#0066FF';
+    ctx.lineWidth = 3;
     ctx.stroke();
+
+    // Dollar sign in center
+    ctx.fillStyle = '#0066FF';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('$', center, center);
 
     // Pointer (top)
     ctx.beginPath();
-    ctx.moveTo(center - 10, 5);
-    ctx.lineTo(center + 10, 5);
-    ctx.lineTo(center, 25);
+    ctx.moveTo(center - 12, 5);
+    ctx.lineTo(center + 12, 5);
+    ctx.lineTo(center, 28);
     ctx.closePath();
-    ctx.fillStyle = '#1F2937';
+    ctx.fillStyle = '#FF3333';
     ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1;
+    ctx.stroke();
   }, [participants, rotation]);
 
   useEffect(() => {
@@ -82,7 +93,6 @@ export default function SpinWheel({ participants, winnerIndex, spinning }: SpinW
     if (count === 0) return;
 
     const arc = (2 * Math.PI) / count;
-    // Spin multiple full rotations + land on winner
     const targetAngle = -(winnerIndex * arc + arc / 2) + Math.PI * 2 * 5;
 
     let start: number;
@@ -92,7 +102,6 @@ export default function SpinWheel({ participants, winnerIndex, spinning }: SpinW
       if (!start) start = timestamp;
       const elapsed = timestamp - start;
       const progress = Math.min(elapsed / duration, 1);
-      // Ease-out cubic
       const eased = 1 - Math.pow(1 - progress, 3);
       setRotation(eased * targetAngle);
 
@@ -110,7 +119,7 @@ export default function SpinWheel({ participants, winnerIndex, spinning }: SpinW
         ref={canvasRef}
         width={320}
         height={320}
-        className="rounded-full shadow-lg"
+        className="rounded-full shadow-lg dark:shadow-brand-500/20"
       />
     </div>
   );

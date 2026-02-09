@@ -99,8 +99,8 @@ class DrawService {
       const result = await ddb.send(new QueryCommand({
         TableName: tables.draws,
         IndexName: 'modeStatus-index',
-        KeyConditionExpression: 'mode = :mode AND #status = :status',
-        ExpressionAttributeNames: { '#status': 'status' },
+        KeyConditionExpression: '#mode = :mode AND #status = :status',
+        ExpressionAttributeNames: { '#mode': 'mode', '#status': 'status' },
         ExpressionAttributeValues: { ':mode': mode, ':status': status },
       }));
       return (result.Items || []) as Draw[];
@@ -109,7 +109,8 @@ class DrawService {
     const result = await ddb.send(new QueryCommand({
       TableName: tables.draws,
       IndexName: 'modeStatus-index',
-      KeyConditionExpression: 'mode = :mode',
+      KeyConditionExpression: '#mode = :mode',
+      ExpressionAttributeNames: { '#mode': 'mode' },
       ExpressionAttributeValues: { ':mode': mode },
     }));
     return (result.Items || []) as Draw[];
@@ -148,9 +149,9 @@ class DrawService {
         const openDraws = await ddb.send(new QueryCommand({
           TableName: tables.draws,
           IndexName: 'templateMode-index',
-          KeyConditionExpression: 'templateId = :tid AND mode = :mode',
+          KeyConditionExpression: 'templateId = :tid AND #mode = :mode',
           FilterExpression: '#status = :open',
-          ExpressionAttributeNames: { '#status': 'status' },
+          ExpressionAttributeNames: { '#status': 'status', '#mode': 'mode' },
           ExpressionAttributeValues: {
             ':tid': template.templateId,
             ':mode': mode,

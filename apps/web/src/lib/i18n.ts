@@ -1,0 +1,183 @@
+export type Locale = 'es' | 'en';
+
+const translations = {
+  // ───────── Nav / Global ─────────
+  'nav.rooms': { es: 'Salas', en: 'Rooms' },
+  'nav.wallet': { es: 'Billetera', en: 'Wallet' },
+  'nav.admin': { es: 'Admin', en: 'Admin' },
+  'nav.login': { es: 'Iniciar Sesión', en: 'Log in' },
+  'nav.signup': { es: 'Registrate', en: 'Sign up' },
+  'nav.logout': { es: 'Cerrar Sesión', en: 'Logout' },
+
+  // ───────── Home ─────────
+  'home.title': { es: 'Bienvenido a SORTYAPP', en: 'Welcome to SORTYAPP' },
+  'home.subtitle': {
+    es: 'Participa en salas de sorteo con créditos. Prueba el modo demo gratis, o usa créditos reales.',
+    en: 'Participate in draw rooms with credits. Try demo mode for free, or use real credits for real results.',
+  },
+  'home.browse': { es: 'Ver Salas', en: 'Browse Rooms' },
+  'home.myWallet': { es: 'Mi Billetera', en: 'My Wallet' },
+  'home.getStarted': { es: 'Empezar', en: 'Get Started' },
+  'home.demoTitle': { es: 'Modo Demo', en: 'Demo Mode' },
+  'home.demoDesc': {
+    es: 'Comienza con 10,000 créditos demo. Prueba las salas sin riesgo antes de usar créditos reales.',
+    en: 'Start with 10,000 demo credits. Try rooms risk-free before using real credits.',
+  },
+  'home.fairTitle': { es: 'Sorteos Justos', en: 'Fair Draws' },
+  'home.fairDesc': {
+    es: 'Cada sorteo usa verificación commit-reveal. Revisa las semillas y el hash después de completar.',
+    en: 'Every draw uses commit-reveal verification. Check the seeds and hash after completion.',
+  },
+  'home.instantTitle': { es: 'Resultados Instantáneos', en: 'Instant Results' },
+  'home.instantDesc': {
+    es: 'Las salas se llenan, comienza una cuenta regresiva de 15 segundos, y el resultado se determina automáticamente.',
+    en: 'Rooms fill up, a 15-second countdown begins, and the result is determined automatically.',
+  },
+
+  // ───────── Login ─────────
+  'login.title': { es: 'Iniciar Sesión', en: 'Log in' },
+  'login.email': { es: 'Correo Electrónico', en: 'Email' },
+  'login.password': { es: 'Contraseña', en: 'Password' },
+  'login.submit': { es: 'Iniciar Sesión', en: 'Log in' },
+  'login.loading': { es: 'Iniciando sesión...', en: 'Logging in...' },
+  'login.noAccount': { es: '¿No tienes cuenta?', en: 'No account?' },
+  'login.signupLink': { es: 'Registrate', en: 'Sign up' },
+
+  // ───────── Register ─────────
+  'register.title': { es: 'Crear Cuenta', en: 'Create Account' },
+  'register.email': { es: 'Correo Electrónico', en: 'Email' },
+  'register.username': { es: 'Nombre de Usuario', en: 'Username' },
+  'register.usernameHint': {
+    es: '3-20 caracteres, letras, números, guion bajo',
+    en: '3-20 characters, letters, numbers, underscores',
+  },
+  'register.password': { es: 'Contraseña', en: 'Password' },
+  'register.referral': { es: 'Código de Referido (opcional)', en: 'Referral Code (optional)' },
+  'register.submit': { es: 'Registrate', en: 'Sign up' },
+  'register.loading': { es: 'Creando cuenta...', en: 'Creating account...' },
+  'register.hasAccount': { es: '¿Ya tienes cuenta?', en: 'Already have an account?' },
+  'register.loginLink': { es: 'Iniciar Sesión', en: 'Log in' },
+
+  // ───────── Dashboard ─────────
+  'dash.title': { es: 'Panel', en: 'Dashboard' },
+  'dash.balance': { es: 'Balance', en: 'Balance' },
+  'dash.demoBalance': { es: 'Balance Demo', en: 'Demo Balance' },
+  'dash.realBalance': { es: 'Balance Real', en: 'Real Balance' },
+  'dash.referralCode': { es: 'Código de Referido', en: 'Referral Code' },
+  'dash.referralHint': {
+    es: 'Comparte para ganar $5 cuando depositen',
+    en: 'Share to earn $5 when they deposit',
+  },
+  'dash.browseRooms': { es: 'Ver Salas', en: 'Browse Rooms' },
+  'dash.recentTx': { es: 'Transacciones Recientes', en: 'Recent Transactions' },
+  'dash.noTx': { es: 'Sin transacciones aún.', en: 'No transactions yet.' },
+  'dash.pleaseLogin': { es: 'Por favor inicia sesión.', en: 'Please log in.' },
+
+  // ───────── Rooms ─────────
+  'rooms.title': { es: 'Salas', en: 'Rooms' },
+  'rooms.demo': { es: 'Salas Demo', en: 'Demo Rooms' },
+  'rooms.real': { es: 'Salas Reales', en: 'Real Rooms' },
+  'rooms.all': { es: 'Todas', en: 'All' },
+  'rooms.loading': { es: 'Cargando salas...', en: 'Loading rooms...' },
+  'rooms.none': { es: 'No se encontraron salas.', en: 'No rooms found.' },
+  'rooms.entry': { es: 'entrada', en: 'entry' },
+  'rooms.slots': { es: 'lugares', en: 'slots' },
+  'rooms.spotsLeft': { es: 'lugar(es) disponible(s)', en: 'spot(s) left' },
+  'rooms.winner': { es: 'Seleccionado', en: 'Selected' },
+
+  // ───────── Room Detail ─────────
+  'room.title': { es: 'Sala', en: 'Room' },
+  'room.mode': { es: 'modo', en: 'mode' },
+  'room.participate': { es: 'Participar', en: 'Participate' },
+  'room.joining': { es: 'Uniéndose...', en: 'Joining...' },
+  'room.joined': { es: 'Estás participando en este sorteo.', en: 'You are participating in this draw.' },
+  'room.participants': { es: 'Jugadores', en: 'Participants' },
+  'room.slotOpen': { es: 'Lugar - Disponible', en: 'Slot - Open' },
+  'room.drawDetails': { es: 'Detalles del Sorteo', en: 'Draw Details' },
+  'room.pool': { es: 'Pozo', en: 'Pool' },
+  'room.fee': { es: 'Comisión', en: 'Fee' },
+  'room.prize': { es: 'Premio', en: 'Prize' },
+  'room.created': { es: 'Creado', en: 'Created' },
+  'room.selectedUser': { es: 'Usuario Seleccionado', en: 'Selected User' },
+  'room.drawingIn': { es: 'El sorteo inicia en', en: 'Drawing in' },
+  'room.fairness': { es: 'Verificación de Justicia', en: 'Fairness Verification' },
+  'room.commitHash': { es: 'Hash de Compromiso', en: 'Commit Hash' },
+  'room.publicSeed': { es: 'Semilla Pública', en: 'Public Seed' },
+  'room.serverSeed': { es: 'Semilla del Servidor (revelada)', en: 'Server Seed (revealed)' },
+  'room.verifyHint': {
+    es: 'Verificar: SHA256(serverSeed + publicSeed) debe ser igual al hash de compromiso.',
+    en: 'Verify: SHA256(serverSeed + publicSeed) should equal the commit hash.',
+  },
+  'room.loading': { es: 'Cargando sorteo...', en: 'Loading draw...' },
+  'room.notFound': { es: 'Sorteo no encontrado.', en: 'Draw not found.' },
+
+  // ───────── Confirm Modal ─────────
+  'confirm.title': { es: 'Confirmar Participación', en: 'Confirm Participation' },
+  'confirm.message': {
+    es: 'Estás a punto de unirte a este sorteo por ${amount} (${credits} créditos). Una vez que te unas, no puedes salir o cancelar. ¿Deseas continuar?',
+    en: 'You are about to join this draw for ${amount} (${credits} credits). Once you join, you cannot exit or cancel. Do you want to proceed?',
+  },
+  'confirm.yes': { es: 'Sí, Participar', en: 'Yes, Participate' },
+  'confirm.cancel': { es: 'Cancelar', en: 'Cancel' },
+
+  // ───────── Wallet ─────────
+  'wallet.title': { es: 'Billetera', en: 'Wallet' },
+  'wallet.balance': { es: 'Balance', en: 'Balance' },
+  'wallet.credits': { es: 'créditos', en: 'credits' },
+  'wallet.withdraw': { es: 'Solicitar Retiro', en: 'Request Withdrawal' },
+  'wallet.amount': { es: 'Monto (USD)', en: 'Amount (USD)' },
+  'wallet.minAmount': { es: 'Mínimo $10', en: 'Min $10' },
+  'wallet.fee': { es: 'Comisión', en: 'Fee' },
+  'wallet.net': { es: 'Neto', en: 'Net' },
+  'wallet.walletAddress': { es: 'Dirección Polygon', en: 'Polygon Wallet Address' },
+  'wallet.submitWithdraw': { es: 'Solicitar Retiro', en: 'Request Withdrawal' },
+  'wallet.processing': { es: 'Procesando...', en: 'Processing...' },
+  'wallet.demoWarning': {
+    es: 'Los créditos demo no se pueden retirar. Cambia al modo Real para gestionar créditos reales.',
+    en: 'Demo credits cannot be withdrawn. Switch to Real mode to manage real credits.',
+  },
+  'wallet.transactions': { es: 'Transacciones', en: 'Transactions' },
+  'wallet.withdrawals': { es: 'Retiros', en: 'Withdrawals' },
+  'wallet.noTx': { es: 'Sin transacciones aún.', en: 'No transactions yet.' },
+  'wallet.noWithdrawals': { es: 'Sin retiros aún.', en: 'No withdrawals yet.' },
+  'wallet.referralTitle': { es: 'Tu Código de Referido', en: 'Your Referral Code' },
+  'wallet.referralHint': {
+    es: 'Comparte este código. Cuando alguien se registre y haga su primer depósito real, ambos ganan $5 en créditos reales.',
+    en: 'Share this code. When someone signs up and makes their first real deposit, you both earn $5 in real credits.',
+  },
+
+  // ───────── Admin ─────────
+  'admin.title': { es: 'Panel de Admin', en: 'Admin Panel' },
+  'admin.users': { es: 'Usuarios', en: 'Users' },
+  'admin.withdrawals': { es: 'Retiros', en: 'Withdrawals' },
+  'admin.templates': { es: 'Plantillas', en: 'Templates' },
+  'admin.draws': { es: 'Sorteos', en: 'Draws' },
+  'admin.simulateDeposit': { es: 'Simular Depósito', en: 'Simulate Deposit' },
+  'admin.userId': { es: 'ID de Usuario', en: 'User ID' },
+  'admin.selectUser': { es: 'Seleccionar usuario', en: 'Select user' },
+  'admin.deposit': { es: 'Depositar', en: 'Deposit' },
+  'admin.noPending': { es: 'Sin retiros pendientes.', en: 'No pending withdrawals.' },
+  'admin.enterTxHash': { es: 'Ingresa hash de transacción', en: 'Enter tx hash' },
+  'admin.approve': { es: 'Aprobar', en: 'Approve' },
+  'admin.ensureDraws': { es: 'Asegurar Salas Abiertas', en: 'Ensure Open Draws' },
+  'admin.accessDenied': { es: 'Acceso denegado. Solo admin.', en: 'Access denied. Admin only.' },
+  'admin.slotsEntry': { es: 'lugares · $${entry} entrada', en: 'slots · $${entry} entry' },
+  'admin.requiresDeposit': { es: 'Requiere depósito', en: 'Requires deposit' },
+  'admin.enabled': { es: 'Activa', en: 'Enabled' },
+  'admin.disabled': { es: 'Desactivada', en: 'Disabled' },
+  'admin.filled': { es: 'llenos', en: 'filled' },
+
+  // ───────── Common ─────────
+  'common.demo': { es: 'Demo', en: 'Demo' },
+  'common.real': { es: 'Real', en: 'Real' },
+  'common.loading': { es: 'Cargando...', en: 'Loading...' },
+  'common.yes': { es: 'Sí', en: 'Yes' },
+  'common.no': { es: 'No', en: 'No' },
+} as const;
+
+export type TranslationKey = keyof typeof translations;
+
+export function t(key: TranslationKey, locale: Locale): string {
+  const entry = translations[key];
+  return entry?.[locale] ?? key;
+}
