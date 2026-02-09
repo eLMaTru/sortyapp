@@ -44,6 +44,10 @@ export const api = {
     join: (drawId: string) =>
       request<any>('/draws/join', { method: 'POST', body: JSON.stringify({ drawId }) }),
     templates: () => request<any[]>('/draws/templates'),
+    chatMessages: (drawId: string) => request<any[]>(`/draws/${drawId}/chat`),
+    sendChatMessage: (drawId: string, content: string) =>
+      request<any>(`/draws/${drawId}/chat`, { method: 'POST', body: JSON.stringify({ content }) }),
+    rankings: (mode: string) => request<any[]>(`/draws/rankings?mode=${mode}`),
   },
 
   wallet: {
@@ -71,5 +75,6 @@ export const api = {
     forceFinalize: (drawId: string) =>
       request<any>(`/admin/draws/${drawId}/force-finalize`, { method: 'POST' }),
     ensureOpenDraws: () => request<any>('/admin/ensure-open-draws', { method: 'POST' }),
+    metrics: () => request<any>('/admin/metrics'),
   },
 };

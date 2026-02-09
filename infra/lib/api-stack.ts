@@ -102,7 +102,7 @@ export class ApiStack extends cdk.Stack {
     };
 
     grantRW(authFn, [props.tables.users, props.tables.transactions]);
-    grantRW(drawsFn, [props.tables.draws, props.tables.templates, props.tables.users, props.tables.transactions]);
+    grantRW(drawsFn, [props.tables.draws, props.tables.templates, props.tables.users, props.tables.transactions, props.tables.chatMessages]);
     grantRW(walletFn, [props.tables.users, props.tables.transactions, props.tables.withdrawals, props.tables.dailyDeposits]);
     grantRW(adminFn, Object.values(props.tables) as dynamodb.Table[]);
     grantRW(webhooksFn, [props.tables.users, props.tables.transactions]);

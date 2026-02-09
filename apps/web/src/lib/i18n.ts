@@ -206,6 +206,38 @@ const translations = {
   'admin.templateUpdated': { es: 'Plantilla actualizada', en: 'Template updated' },
   'admin.drawFinalized': { es: 'Sorteo finalizado', en: 'Draw finalized' },
 
+  // ───────── Chat ─────────
+  'chat.title': { es: 'Chat', en: 'Chat' },
+  'chat.placeholder': { es: 'Escribe un mensaje...', en: 'Type a message...' },
+  'chat.send': { es: 'Enviar', en: 'Send' },
+  'chat.noMessages': { es: 'Sin mensajes aún. Sé el primero!', en: 'No messages yet. Be the first!' },
+  'chat.loginToChat': { es: 'Inicia sesión para chatear', en: 'Log in to chat' },
+  'chat.onlyParticipants': { es: 'Solo los participantes pueden chatear', en: 'Only participants can chat' },
+  'chat.closed': { es: 'El chat ha terminado', en: 'Chat has ended' },
+  'chat.remaining': { es: 'msgs restantes', en: 'msgs remaining' },
+
+  // ───────── Rankings ─────────
+  'rankings.title': { es: 'Clasificaciones', en: 'Rankings' },
+  'rankings.rank': { es: '#', en: '#' },
+  'rankings.player': { es: 'Jugador', en: 'Player' },
+  'rankings.wins': { es: 'Victorias', en: 'Wins' },
+  'rankings.plays': { es: 'Partidas', en: 'Plays' },
+  'rankings.winRate': { es: '% Victorias', en: 'Win Rate' },
+  'rankings.totalWon': { es: 'Total Ganado', en: 'Total Won' },
+  'rankings.noData': { es: 'Sin datos de clasificación aún.', en: 'No ranking data yet.' },
+
+  // ───────── Admin Metrics ─────────
+  'admin.metrics': { es: 'Métricas', en: 'Metrics' },
+  'admin.totalUsers': { es: 'Usuarios Totales', en: 'Total Users' },
+  'admin.drawsCompleted': { es: 'Sorteos Completados', en: 'Draws Completed' },
+  'admin.drawsOpen': { es: 'Sorteos Abiertos', en: 'Draws Open' },
+  'admin.totalSCSpent': { es: 'SC Apostados', en: 'SC Wagered' },
+  'admin.totalFeeSC': { es: 'SC Comisiones', en: 'SC Fees Earned' },
+  'admin.pendingWithdrawals': { es: 'Retiros Pendientes', en: 'Pending Withdrawals' },
+  'admin.sentWithdrawals': { es: 'Retiros Enviados', en: 'Sent Withdrawals' },
+  'admin.recentDraws': { es: 'Sorteos (24h)', en: 'Draws (24h)' },
+  'admin.recentUsers': { es: 'Nuevos Usuarios (24h)', en: 'New Users (24h)' },
+
   // ───────── Common ─────────
   'common.demo': { es: 'Demo', en: 'Demo' },
   'common.real': { es: 'Real', en: 'Real' },

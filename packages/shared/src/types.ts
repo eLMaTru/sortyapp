@@ -142,6 +142,40 @@ export interface DailyDeposit {
   totalCredits: number;
 }
 
+// ─── Chat Messages ──────────────────────────────────────────────────────────
+export interface ChatMessage {
+  drawId: string;
+  messageId: string;
+  userId: string;
+  username: string;
+  content: string;
+  createdAt: string;
+  expiresAt: number; // TTL epoch seconds
+}
+
+// ─── Rankings ───────────────────────────────────────────────────────────────
+export interface RankingEntry {
+  userId: string;
+  username: string;
+  wins: number;
+  participations: number;
+  winRate: number; // percentage
+  totalWinnings: number; // credits
+}
+
+// ─── Admin Metrics ──────────────────────────────────────────────────────────
+export interface AdminMetrics {
+  totalUsers: number;
+  totalDrawsCompleted: number;
+  totalDrawsOpen: number;
+  totalSCSpent: number;
+  totalFeeSC: number;
+  totalWithdrawalsPending: number;
+  totalWithdrawalsSent: number;
+  recentDraws: number; // last 24h
+  recentUsers: number; // last 24h
+}
+
 // ─── API Response Envelope ───────────────────────────────────────────────────
 export interface ApiResponse<T = unknown> {
   success: boolean;

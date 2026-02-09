@@ -543,6 +543,49 @@ class DrawService {
     return (await this.getDrawRaw(drawId))!;
   }
 
+  // ─── Rankings ────────────────────────────────────────────────────────────
+  async getRankings(mode: WalletMode): Promise<any[]> {
+    const result = await ddb.send(new QueryCommand({
+      TableName: tables.draws,
+      IndexName: 'modeStatus-index',
+      KeyConditionExpression: '#mode = :mode AND #status = :status',
+      ExpressionAttributeNames: { '#mode': 'mode', '#status': 'status' },
+      ExpressionAttributeValues: { ':mode': mode, ':status': 'COMPLETED' },
+    }));
+    const draws = (result.Items || []) as Draw[];
+
+    const stats = new Map<string, { userId: string; username: string; wins: number; participations: number; totalWinnings: number }>();
+
+    for (const draw of draws) {
+      for (const uid of draw.participants) {
+        if (!stats.has(uid)) {
+          stats.set(uid, {
+            userId: uid,
+            username: draw.participantUsernames[uid] || uid.slice(0, 8),
+            wins: 0,
+            participations: 0,
+            totalWinnings: 0,
+          });
+        }
+        const s = stats.get(uid)!;
+        s.participations++;
+        if (draw.winnerId === uid) {
+          s.wins++;
+          s.totalWinnings += draw.prize || 0;
+        }
+      }
+    }
+
+    return Array.from(stats.values())
+      .map((s) => ({
+        ...s,
+        winRate: s.participations > 0 ? Math.round((s.wins / s.participations) * 100) : 0,
+      }))
+      .filter((s) => !s.username.startsWith('Demo'))
+      .sort((a, b) => b.wins - a.wins || b.winRate - a.winRate || b.totalWinnings - a.totalWinnings)
+      .slice(0, 50);
+  }
+
   // ─── Admin: force finalize (dev tool) ──────────────────────────────────
   async forceFinalize(drawId: string): Promise<Draw> {
     const draw = await this.getDrawRaw(drawId);

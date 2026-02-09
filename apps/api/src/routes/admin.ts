@@ -9,6 +9,7 @@ import { authenticate, requireRole, AuthRequest } from '../middleware/auth.middl
 import { walletService } from '../services/wallet.service';
 import { drawService } from '../services/draw.service';
 import { userService } from '../services/user.service';
+import { metricsService } from '../services/metrics.service';
 
 const router = Router();
 
@@ -96,6 +97,14 @@ router.post('/draws/:drawId/simulate-join', async (req, res, next) => {
   try {
     const draw = await drawService.joinDraw(req.body.userId, req.params.drawId);
     res.json({ success: true, data: draw });
+  } catch (err) { next(err); }
+});
+
+// ─── Metrics ──────────────────────────────────────────────────────────────
+router.get('/metrics', async (_req, res, next) => {
+  try {
+    const metrics = await metricsService.getAdminMetrics();
+    res.json({ success: true, data: metrics });
   } catch (err) { next(err); }
 });
 

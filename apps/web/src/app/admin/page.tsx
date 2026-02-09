@@ -8,11 +8,12 @@ import { api } from '@/lib/api';
 export default function AdminPage() {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const [tab, setTab] = useState<'users' | 'withdrawals' | 'templates' | 'draws'>('users');
+  const [tab, setTab] = useState<'metrics' | 'users' | 'withdrawals' | 'templates' | 'draws'>('metrics');
   const [users, setUsers] = useState<any[]>([]);
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
   const [draws, setDraws] = useState<any[]>([]);
+  const [metrics, setMetrics] = useState<any>(null);
   const [drawMode, setDrawMode] = useState<'DEMO' | 'REAL'>('REAL');
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
@@ -39,16 +40,18 @@ export default function AdminPage() {
 
   const loadData = async () => {
     try {
-      const [u, w, tpl, d] = await Promise.all([
+      const [u, w, tpl, d, m] = await Promise.all([
         api.admin.users(),
         api.admin.pendingWithdrawals(),
         api.admin.templates(),
         api.admin.draws(drawMode),
+        api.admin.metrics(),
       ]);
       setUsers(u);
       setWithdrawals(w);
       setTemplates(tpl.sort((a: any, b: any) => (a.slots - b.slots) || ((a.entryCredits || a.entryDollars * 100) - (b.entryCredits || b.entryDollars * 100))));
       setDraws(d);
+      setMetrics(m);
     } catch (e: any) {
       setErr(e.message);
     }
@@ -126,8 +129,9 @@ export default function AdminPage() {
     } catch (e: any) { setErr(e.message); }
   };
 
-  const tabKeys = ['users', 'withdrawals', 'templates', 'draws'] as const;
+  const tabKeys = ['metrics', 'users', 'withdrawals', 'templates', 'draws'] as const;
   const tabLabels: Record<string, string> = {
+    metrics: t('admin.metrics'),
     users: t('admin.users'),
     withdrawals: t('admin.withdrawals'),
     templates: t('admin.templates'),
@@ -154,6 +158,21 @@ export default function AdminPage() {
           </button>
         ))}
       </div>
+
+      {/* Metrics tab */}
+      {tab === 'metrics' && metrics && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <MetricCard label={t('admin.totalUsers')} value={metrics.totalUsers} />
+          <MetricCard label={t('admin.drawsCompleted')} value={metrics.totalDrawsCompleted} />
+          <MetricCard label={t('admin.drawsOpen')} value={metrics.totalDrawsOpen} />
+          <MetricCard label={t('admin.totalSCSpent')} value={metrics.totalSCSpent.toLocaleString()} sub={`~$${(metrics.totalSCSpent / 100).toFixed(2)}`} />
+          <MetricCard label={t('admin.totalFeeSC')} value={metrics.totalFeeSC.toLocaleString()} sub={`~$${(metrics.totalFeeSC / 100).toFixed(2)}`} color="text-brand-500" />
+          <MetricCard label={t('admin.pendingWithdrawals')} value={metrics.totalWithdrawalsPending} color={metrics.totalWithdrawalsPending > 0 ? 'text-yellow-600' : undefined} />
+          <MetricCard label={t('admin.sentWithdrawals')} value={metrics.totalWithdrawalsSent} />
+          <MetricCard label={t('admin.recentDraws')} value={metrics.recentDraws} />
+          <MetricCard label={t('admin.recentUsers')} value={metrics.recentUsers} />
+        </div>
+      )}
 
       {/* Users tab */}
       {tab === 'users' && (
@@ -258,7 +277,6 @@ export default function AdminPage() {
       {/* Templates tab */}
       {tab === 'templates' && (
         <div>
-          {/* Create template form */}
           <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-4 mb-6">
             <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">{t('admin.createTemplate')}</h3>
             <form onSubmit={handleCreateTemplate} className="flex flex-col sm:flex-row gap-3 sm:items-end flex-wrap">
@@ -302,7 +320,6 @@ export default function AdminPage() {
             </form>
           </div>
 
-          {/* Templates list */}
           <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 divide-y divide-gray-200 dark:divide-surface-dark-3">
             {templates.map((tpl) => (
               <div key={tpl.templateId} className="px-4 py-3 flex justify-between items-center">
@@ -401,6 +418,16 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function MetricCard({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
+  return (
+    <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-4">
+      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</div>
+      <div className={`text-2xl font-bold ${color || 'text-gray-900 dark:text-white'}`}>{value}</div>
+      {sub && <div className="text-xs text-gray-400 mt-0.5">{sub}</div>}
     </div>
   );
 }

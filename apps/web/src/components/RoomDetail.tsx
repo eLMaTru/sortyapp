@@ -10,6 +10,9 @@ import SpinWheel from '@/components/SpinWheel';
 import ConfirmModal from '@/components/ConfirmModal';
 import WinnerCelebration from '@/components/WinnerCelebration';
 
+const CHAT_MAX = 5;
+const CHAT_TTL_MINUTES = 5;
+
 export default function RoomDetail() {
   const searchParams = useSearchParams();
   const id = searchParams.get('id') || '';
@@ -110,6 +113,11 @@ export default function RoomDetail() {
     ? draw.participants.indexOf(draw.winnerId)
     : undefined;
 
+  // Chat is active during OPEN, COUNTDOWN, RUNNING, and 5min post-COMPLETED
+  const isChatActive = ['OPEN', 'FULL', 'COUNTDOWN', 'RUNNING'].includes(draw.status) ||
+    (draw.status === 'COMPLETED' && draw.completedAt &&
+      Date.now() < new Date(draw.completedAt).getTime() + CHAT_TTL_MINUTES * 60 * 1000);
+
   return (
     <div className="max-w-2xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-6">
@@ -207,6 +215,11 @@ export default function RoomDetail() {
         </div>
       )}
 
+      {/* Chat section */}
+      {draw.filledSlots > 0 && (isChatActive || draw.status === 'COMPLETED') && (
+        <RoomChat drawId={id} draw={draw} isChatActive={!!isChatActive} />
+      )}
+
       <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-4 mb-6">
         <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">
           {t('room.participants')} ({draw.filledSlots}/{draw.totalSlots})
@@ -272,6 +285,125 @@ export default function RoomDetail() {
         onConfirm={handleJoin}
         onCancel={() => setShowConfirm(false)}
       />
+    </div>
+  );
+}
+
+// ─── Chat Component ───────────────────────────────────────────────────────────
+function RoomChat({ drawId, draw, isChatActive }: { drawId: string; draw: any; isChatActive: boolean }) {
+  const { user } = useAuth();
+  const { t } = useLanguage();
+  const [messages, setMessages] = useState<any[]>([]);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const [chatError, setChatError] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const hasJoined = user && draw.participants?.includes(user.userId);
+
+  // Count user's messages in this draw
+  const userMsgCount = user ? messages.filter((m) => m.userId === user.userId).length : 0;
+  const msgsRemaining = CHAT_MAX - userMsgCount;
+
+  // Poll for messages
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const msgs = await api.draws.chatMessages(drawId);
+        setMessages(msgs);
+      } catch { /* ignore */ }
+    };
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 3000);
+    return () => clearInterval(interval);
+  }, [drawId]);
+
+  // Auto-scroll on new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length]);
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || sending || !hasJoined || msgsRemaining <= 0) return;
+    setSending(true);
+    setChatError('');
+    try {
+      const msg = await api.draws.sendChatMessage(drawId, input.trim());
+      setMessages((prev) => [...prev, msg]);
+      setInput('');
+    } catch (err: any) {
+      setChatError(err.message);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 mb-6 overflow-hidden">
+      <div className="px-4 py-2 border-b border-gray-200 dark:border-surface-dark-3 flex justify-between items-center">
+        <h3 className="font-semibold text-sm text-gray-900 dark:text-white">{t('chat.title')}</h3>
+        {hasJoined && isChatActive && (
+          <span className="text-xs text-gray-400">{msgsRemaining} {t('chat.remaining')}</span>
+        )}
+      </div>
+
+      {/* Messages */}
+      <div className="h-40 overflow-y-auto px-4 py-2 space-y-1.5">
+        {messages.length === 0 ? (
+          <p className="text-xs text-gray-400 text-center py-4">{t('chat.noMessages')}</p>
+        ) : (
+          messages.map((msg) => (
+            <div key={msg.messageId} className="flex gap-2 text-xs">
+              <span className={`font-semibold shrink-0 ${
+                msg.userId === user?.userId ? 'text-brand-500' : 'text-gray-600 dark:text-gray-300'
+              }`}>
+                {msg.username}:
+              </span>
+              <span className="text-gray-700 dark:text-gray-400 break-words min-w-0">{msg.content}</span>
+            </div>
+          ))
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      {isChatActive ? (
+        !user ? (
+          <div className="px-4 py-2 border-t border-gray-200 dark:border-surface-dark-3 text-xs text-gray-400 text-center">
+            {t('chat.loginToChat')}
+          </div>
+        ) : !hasJoined ? (
+          <div className="px-4 py-2 border-t border-gray-200 dark:border-surface-dark-3 text-xs text-gray-400 text-center">
+            {t('chat.onlyParticipants')}
+          </div>
+        ) : (
+          <form onSubmit={handleSend} className="border-t border-gray-200 dark:border-surface-dark-3 flex">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              maxLength={140}
+              disabled={sending || msgsRemaining <= 0}
+              placeholder={msgsRemaining <= 0 ? `${CHAT_MAX}/${CHAT_MAX}` : t('chat.placeholder')}
+              className="flex-1 px-3 py-2 text-xs bg-transparent dark:text-white focus:outline-none disabled:opacity-50"
+            />
+            <button
+              type="submit"
+              disabled={sending || !input.trim() || msgsRemaining <= 0}
+              className="px-3 py-2 text-xs font-medium text-brand-500 hover:text-brand-600 disabled:opacity-30"
+            >
+              {t('chat.send')}
+            </button>
+          </form>
+        )
+      ) : (
+        <div className="px-4 py-2 border-t border-gray-200 dark:border-surface-dark-3 text-xs text-gray-400 text-center">
+          {t('chat.closed')}
+        </div>
+      )}
+      {chatError && (
+        <div className="px-4 py-1 text-xs text-red-500">{chatError}</div>
+      )}
     </div>
   );
 }

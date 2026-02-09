@@ -62,6 +62,11 @@ export const TransakWebhookSchema = z.object({
   }),
 });
 
+// ─── Chat ───────────────────────────────────────────────────────────────────
+export const SendChatMessageSchema = z.object({
+  content: z.string().min(1).max(140),
+});
+
 // ─── Query params ────────────────────────────────────────────────────────────
 export const ListDrawsQuerySchema = z.object({
   mode: z.enum(['DEMO', 'REAL']),

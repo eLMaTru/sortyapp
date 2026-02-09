@@ -31,6 +31,9 @@ export default function Navbar() {
                 <Link href="/rooms" className="text-sm text-white/80 hover:text-white">
                   {t('nav.rooms')}
                 </Link>
+                <Link href="/rankings" className="text-sm text-white/80 hover:text-white">
+                  {t('rankings.title')}
+                </Link>
                 <Link href="/wallet" className="text-sm text-white/80 hover:text-white">
                   {t('nav.wallet')}
                 </Link>
@@ -188,6 +191,9 @@ export default function Navbar() {
                 <div className="flex flex-col gap-2">
                   <Link href="/rooms" onClick={() => setMenuOpen(false)} className="text-sm text-white/80 hover:text-white py-1">
                     {t('nav.rooms')}
+                  </Link>
+                  <Link href="/rankings" onClick={() => setMenuOpen(false)} className="text-sm text-white/80 hover:text-white py-1">
+                    {t('rankings.title')}
                   </Link>
                   <Link href="/wallet" onClick={() => setMenuOpen(false)} className="text-sm text-white/80 hover:text-white py-1">
                     {t('nav.wallet')}

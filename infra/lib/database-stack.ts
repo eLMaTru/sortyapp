@@ -14,6 +14,7 @@ export interface Tables {
   withdrawals: dynamodb.Table;
   templates: dynamodb.Table;
   dailyDeposits: dynamodb.Table;
+  chatMessages: dynamodb.Table;
 }
 
 export class DatabaseStack extends cdk.Stack {
@@ -110,6 +111,16 @@ export class DatabaseStack extends cdk.Stack {
       removalPolicy,
     });
 
-    this.tables = { users, draws, transactions, withdrawals, templates, dailyDeposits };
+    // Chat Messages (TTL-enabled for auto-cleanup)
+    const chatMessages = new dynamodb.Table(this, 'ChatMessages', {
+      tableName: `${props.prefix}-chat-messages`,
+      partitionKey: { name: 'drawId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
+      billingMode: billing,
+      removalPolicy,
+      timeToLiveAttribute: 'expiresAt',
+    });
+
+    this.tables = { users, draws, transactions, withdrawals, templates, dailyDeposits, chatMessages };
   }
 }

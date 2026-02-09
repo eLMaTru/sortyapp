@@ -16,6 +16,12 @@ export const WITHDRAWAL_FEE_PERCENT = 1;
 export const DRAW_FEE_PERCENT = 10;
 export const COUNTDOWN_SECONDS = 5;
 
+// Chat
+export const CHAT_MAX_MESSAGES_PER_USER = 5;
+export const CHAT_COOLDOWN_SECONDS = 5;
+export const CHAT_MAX_LENGTH = 140;
+export const CHAT_TTL_AFTER_COMPLETED_MINUTES = 5;
+
 // Referral
 export const REFERRAL_BONUS_CREDITS = 500; // $5
 
@@ -39,4 +45,5 @@ export const tableNames = (prefix: string) => ({
   withdrawals: `${prefix}-withdrawals`,
   templates: `${prefix}-templates`,
   dailyDeposits: `${prefix}-daily-deposits`,
+  chatMessages: `${prefix}-chat-messages`,
 });
