@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '@/lib/api';
@@ -9,7 +9,8 @@ import SpinWheel from '@/components/SpinWheel';
 import ConfirmModal from '@/components/ConfirmModal';
 
 export default function RoomDetail() {
-  const { id } = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id') || '';
   const { user, refreshUser } = useAuth();
   const { t } = useLanguage();
   const [draw, setDraw] = useState<any>(null);

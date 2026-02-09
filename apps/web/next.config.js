@@ -1,10 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // For S3 deployment: use `output: 'export'` and restructure dynamic routes
-  // For Lambda@Edge / Amplify: use `output: 'standalone'`
-  // For local dev: default (no output setting) works best
+  output: 'export',
+  trailingSlash: true,
   images: { unoptimized: true },
   transpilePackages: ['@sortyapp/shared'],
+  env: {
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+  },
 };
 
 module.exports = nextConfig;

@@ -30,7 +30,7 @@ export default function RoomCard({ draw }: RoomCardProps) {
 
   return (
     <Link
-      href={`/rooms/${draw.drawId}`}
+      href={`/rooms/detail?id=${draw.drawId}`}
       className="block bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-4 hover:shadow-md dark:hover:shadow-brand-500/10 transition-shadow"
     >
       <div className="flex justify-between items-start mb-3">
