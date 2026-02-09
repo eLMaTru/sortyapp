@@ -120,6 +120,12 @@ const translations = {
   'room.notFound': { es: 'Sorteo no encontrado.', en: 'Draw not found.' },
   'room.full': { es: 'Esta sala ya está llena.', en: 'This room is already full.' },
   'room.browseOther': { es: 'Ver otras salas disponibles', en: 'Browse other available rooms' },
+  'room.playAgain': { es: 'Jugar de Nuevo', en: 'Play Again' },
+  'room.searching': { es: 'Buscando sala...', en: 'Searching room...' },
+  'rooms.noMatchToast': {
+    es: 'No hay salas abiertas de ese tipo. Aquí puedes ver todas las disponibles.',
+    en: 'No open rooms of that type found. Here you can see all available rooms.',
+  },
 
   // ───────── Confirm Modal ─────────
   'confirm.title': { es: 'Confirmar Participación', en: 'Confirm Participation' },

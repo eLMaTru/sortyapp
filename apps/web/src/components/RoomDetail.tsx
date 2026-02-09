@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -12,6 +12,7 @@ import WinnerCelebration from '@/components/WinnerCelebration';
 
 export default function RoomDetail() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const id = searchParams.get('id') || '';
   const { user, refreshUser } = useAuth();
   const { t } = useLanguage();
@@ -22,8 +23,21 @@ export default function RoomDetail() {
   const [spinning, setSpinning] = useState(false);
   const [spinDone, setSpinDone] = useState(false);
   const [error, setError] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [muted, setMuted] = useState(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('sorty-muted') === '1';
+    return false;
+  });
   const spinTriggeredRef = useRef(false);
   const initialLoadRef = useRef(true);
+
+  const toggleMute = () => {
+    setMuted((prev) => {
+      const next = !prev;
+      localStorage.setItem('sorty-muted', next ? '1' : '0');
+      return next;
+    });
+  };
 
   const fetchDraw = useCallback(async () => {
     try {
@@ -44,20 +58,30 @@ export default function RoomDetail() {
 
   useEffect(() => {
     fetchDraw();
-    // Pause polling while spinner is animating
-    if (spinning && !spinDone) return;
-    // Poll faster during COUNTDOWN (1s) to reduce delay before spin, 3s otherwise
+    // Pause polling once winnerId is known and wheel is spinning (deceleration phase)
+    if (draw?.winnerId && spinning) return;
+    // Poll faster during COUNTDOWN (1s), 3s otherwise
     const pollInterval = draw?.status === 'COUNTDOWN' ? 1000 : 3000;
     const interval = setInterval(fetchDraw, pollInterval);
     return () => clearInterval(interval);
-  }, [fetchDraw, spinning, spinDone, draw?.status]);
+  }, [fetchDraw, spinning, draw?.status, draw?.winnerId]);
 
+  // Fallback: if user opens page and draw is already COMPLETED (didn't see countdown)
   useEffect(() => {
     if (draw?.status === 'COMPLETED' && draw.winnerId && !spinTriggeredRef.current) {
       spinTriggeredRef.current = true;
       setSpinning(true);
     }
   }, [draw?.status, draw?.winnerId]);
+
+  // When countdown ends: start pre-spin immediately + fetch to trigger finalizeDraw
+  const handleCountdownEnd = useCallback(() => {
+    if (!spinTriggeredRef.current) {
+      spinTriggeredRef.current = true;
+      setSpinning(true); // Pre-spin starts (no winner yet, just constant speed)
+    }
+    fetchDraw(); // API call triggers finalizeDraw, returns winnerId
+  }, [fetchDraw]);
 
   const handleJoin = async () => {
     setShowConfirm(false);
@@ -71,6 +95,25 @@ export default function RoomDetail() {
       setError(err.message);
     } finally {
       setJoining(false);
+    }
+  };
+
+  const handlePlayAgain = async () => {
+    setSearching(true);
+    try {
+      const openDraws = await api.draws.list(draw.mode, 'OPEN');
+      const match = openDraws.find(
+        (d: any) => d.entryCredits === draw.entryCredits && d.drawId !== draw.drawId && (!user || !d.participants?.includes(user.userId))
+      );
+      if (match) {
+        router.push(`/rooms/detail?id=${match.drawId}`);
+      } else {
+        router.push('/rooms?toast=no-match');
+      }
+    } catch {
+      router.push('/rooms');
+    } finally {
+      setSearching(false);
     }
   };
 
@@ -99,15 +142,30 @@ export default function RoomDetail() {
             {draw.totalSlots} {t('rooms.slots')} &middot; {draw.entryCredits?.toLocaleString()} SC {t('rooms.entry')} &middot; {draw.mode} {t('room.mode')}
           </p>
         </div>
-        <span className={`text-sm font-medium px-3 py-1 rounded-full w-fit ${
-          draw.status === 'OPEN' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
-          draw.status === 'COUNTDOWN' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300' :
-          draw.status === 'RUNNING' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
-          draw.status === 'COMPLETED' ? 'bg-gray-100 dark:bg-surface-dark-3 text-gray-800 dark:text-gray-300' :
-          'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
-        }`}>
-          {draw.status}
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleMute}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded transition-colors"
+            title={muted ? 'Unmute' : 'Mute'}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+              {muted ? (
+                <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06zM17.78 9.22a.75.75 0 10-1.06 1.06L18.44 12l-1.72 1.72a.75.75 0 101.06 1.06l1.72-1.72 1.72 1.72a.75.75 0 101.06-1.06L20.56 12l1.72-1.72a.75.75 0 10-1.06-1.06l-1.72 1.72-1.72-1.72z" />
+              ) : (
+                <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06zM18.584 5.106a.75.75 0 011.06 0c3.808 3.807 3.808 9.98 0 13.788a.75.75 0 11-1.06-1.06 8.25 8.25 0 000-11.668.75.75 0 010-1.06z" />
+              )}
+            </svg>
+          </button>
+          <span className={`text-sm font-medium px-3 py-1 rounded-full w-fit ${
+            draw.status === 'OPEN' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+            draw.status === 'COUNTDOWN' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300' :
+            draw.status === 'RUNNING' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
+            draw.status === 'COMPLETED' ? 'bg-gray-100 dark:bg-surface-dark-3 text-gray-800 dark:text-gray-300' :
+            'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+          }`}>
+            {draw.status}
+          </span>
+        </div>
       </div>
 
       {error && (
@@ -124,10 +182,10 @@ export default function RoomDetail() {
       </div>
 
       {draw.status === 'COUNTDOWN' && draw.countdownEndsAt && (
-        <CountdownTimer endsAt={draw.countdownEndsAt} onCountdownEnd={fetchDraw} />
+        <CountdownTimer endsAt={draw.countdownEndsAt} onCountdownEnd={handleCountdownEnd} />
       )}
 
-      <WinnerCelebration trigger={spinDone && !!draw.winnerUsername} />
+      <WinnerCelebration trigger={spinDone && !!draw.winnerUsername} muted={muted} />
 
       {draw.status === 'COMPLETED' && draw.winnerUsername && spinDone && (
         <div className="bg-accent-gold/10 border border-accent-gold/30 rounded-lg p-4 text-center mb-6 animate-fade-in">
@@ -136,6 +194,15 @@ export default function RoomDetail() {
           <p className="text-sm text-accent-orange">
             {t('room.prize')}: {draw.prize?.toLocaleString()} SC
           </p>
+          {user && (
+            <button
+              onClick={handlePlayAgain}
+              disabled={searching}
+              className="mt-3 bg-brand-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-brand-600 disabled:opacity-50 transition-colors"
+            >
+              {searching ? t('room.searching') : t('room.playAgain')}
+            </button>
+          )}
         </div>
       )}
 

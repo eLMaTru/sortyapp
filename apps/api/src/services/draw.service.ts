@@ -256,6 +256,11 @@ class DrawService {
 
       const updatedDraw = result.Attributes as Draw;
 
+      // Auto-fill DEMO rooms with bots when a real user joins (not a bot)
+      if (updatedDraw.mode === 'DEMO' && updatedDraw.status === 'OPEN' && !user.username.startsWith('Demo')) {
+        await this.autoFillDemoBots(drawId);
+      }
+
       if (isFull) {
         await this.startCountdown(updatedDraw);
       }
@@ -278,6 +283,45 @@ class DrawService {
       }
       throw err;
     }
+  }
+
+  // ─── Auto-fill DEMO rooms with bots ────────────────────────────────────
+  private async autoFillDemoBots(drawId: string): Promise<void> {
+    const draw = await this.getDrawRaw(drawId);
+    if (!draw || draw.status !== 'OPEN' || draw.mode !== 'DEMO') return;
+
+    const slotsNeeded = draw.totalSlots - draw.filledSlots;
+    if (slotsNeeded <= 0) return;
+
+    // Get demo bots (username starts with "Demo")
+    const usersResult = await ddb.send(new ScanCommand({
+      TableName: tables.users,
+      FilterExpression: 'begins_with(username, :prefix)',
+      ExpressionAttributeValues: { ':prefix': 'Demo' },
+    }));
+    const bots = usersResult.Items || [];
+    if (bots.length === 0) return;
+
+    // Pick random bots not already in this draw
+    const availableBots = bots
+      .filter((b: any) => !draw.participants.includes(b.userId))
+      .sort(() => Math.random() - 0.5)
+      .slice(0, slotsNeeded);
+
+    for (const bot of availableBots) {
+      // Top up demo balance if insufficient
+      if ((bot.demoBalance || 0) < draw.entryCredits) {
+        await walletService.creditBalance(bot.userId, 'DEMO', 100_000);
+      }
+      try {
+        await this.joinDraw(bot.userId, drawId);
+      } catch (err: any) {
+        console.log(`[DRAW] Bot ${bot.username} auto-fill failed: ${err.message}`);
+        break; // Room likely full or closed
+      }
+    }
+
+    console.log(`[DRAW] Auto-filled ${availableBots.length} bot(s) into draw ${drawId.slice(0, 8)}`);
   }
 
   // ─── Countdown & finalization ──────────────────────────────────────────

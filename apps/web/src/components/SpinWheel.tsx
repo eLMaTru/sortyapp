@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 
 interface SpinWheelProps {
   participants: string[];
@@ -20,6 +20,8 @@ export default function SpinWheel({ participants, winnerIndex, spinning, onSpinC
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rotationRef = useRef(0);
   const animatingRef = useRef(false);
+  const preSpinRef = useRef(false);
+  const preSpinFrameRef = useRef<number>(0);
 
   const drawWheel = useCallback(() => {
     const canvas = canvasRef.current;
@@ -96,45 +98,80 @@ export default function SpinWheel({ participants, winnerIndex, spinning, onSpinC
 
   // Position wheel to show winner (no animation) for completed draws viewed after the fact
   useEffect(() => {
-    if (winnerIndex !== undefined && !spinning && !animatingRef.current) {
+    if (winnerIndex !== undefined && !spinning && !animatingRef.current && !preSpinRef.current) {
       const count = participants.length;
       if (count === 0) return;
       const arc = (2 * Math.PI) / count;
-      // Set rotation so winner segment center is under the pointer (top = -π/2)
       rotationRef.current = -Math.PI / 2 - (winnerIndex * arc + arc / 2);
       drawWheel();
     }
   }, [winnerIndex, spinning, participants.length, drawWheel]);
 
-  // Spin animation
+  // Phase 1: Pre-spin — constant speed while waiting for winnerId from backend
+  useEffect(() => {
+    if (!spinning || winnerIndex !== undefined || preSpinRef.current || animatingRef.current) return;
+
+    preSpinRef.current = true;
+    const speed = Math.PI * 4; // 2 full rotations per second
+    let lastTime: number | null = null;
+
+    function preSpin(timestamp: number) {
+      if (!preSpinRef.current) return;
+      if (lastTime === null) lastTime = timestamp;
+      const delta = (timestamp - lastTime) / 1000;
+      lastTime = timestamp;
+      rotationRef.current += speed * delta;
+      drawWheel();
+      preSpinFrameRef.current = requestAnimationFrame(preSpin);
+    }
+
+    preSpinFrameRef.current = requestAnimationFrame(preSpin);
+
+    return () => {
+      preSpinRef.current = false;
+      cancelAnimationFrame(preSpinFrameRef.current);
+    };
+  }, [spinning, winnerIndex, drawWheel]);
+
+  // Phase 2: Decelerate from current speed to land on winner segment
   useEffect(() => {
     if (!spinning || winnerIndex === undefined || animatingRef.current) return;
 
-    const count = participants.length;
-    if (count === 0) return;
+    // Stop pre-spin if running
+    preSpinRef.current = false;
+    cancelAnimationFrame(preSpinFrameRef.current);
 
     animatingRef.current = true;
+    const count = participants.length;
+    if (count === 0) return;
     const arc = (2 * Math.PI) / count;
-    // Pointer is at top = -π/2 in canvas coords. Land winner segment center under pointer.
-    // Add 7 full rotations for dramatic spin effect.
-    const targetAngle = -Math.PI / 2 - (winnerIndex * arc + arc / 2) + Math.PI * 2 * 7;
+
+    const startRotation = rotationRef.current;
+    const winnerAngle = -Math.PI / 2 - (winnerIndex * arc + arc / 2);
+
+    // Target: at least 5 more full rotations from current position, landing on winner
+    const minExtra = 5 * 2 * Math.PI;
+    const minTarget = startRotation + minExtra;
+    const n = Math.ceil((minTarget - winnerAngle) / (2 * Math.PI));
+    const targetAngle = winnerAngle + n * 2 * Math.PI;
+    const totalRotation = targetAngle - startRotation;
 
     let startTime: number | null = null;
-    const duration = 7000; // 7 seconds spin
+    const duration = 7000; // 7 seconds deceleration
 
     function animate(timestamp: number) {
       if (startTime === null) startTime = timestamp;
       const elapsed = timestamp - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      // Ease-out quartic for smooth deceleration at the end
+      // Ease-out quartic for smooth deceleration
       const eased = 1 - Math.pow(1 - progress, 4);
-      rotationRef.current = eased * targetAngle;
+      rotationRef.current = startRotation + totalRotation * eased;
       drawWheel();
 
       if (progress < 1) {
         requestAnimationFrame(animate);
       } else {
-        // Keep animatingRef true to prevent re-triggering on re-renders
+        // Keep animatingRef true to prevent re-triggering
         onSpinComplete?.();
       }
     }

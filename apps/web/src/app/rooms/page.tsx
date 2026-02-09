@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMode } from '@/contexts/ModeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -8,12 +9,31 @@ import { api } from '@/lib/api';
 import RoomCard from '@/components/RoomCard';
 
 export default function RoomsPage() {
+  return (
+    <Suspense>
+      <RoomsContent />
+    </Suspense>
+  );
+}
+
+function RoomsContent() {
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const { mode, isDemoMode } = useMode();
   const { t } = useLanguage();
   const [draws, setDraws] = useState<any[]>([]);
   const [filter, setFilter] = useState<string>('OPEN');
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState('');
+
+  useEffect(() => {
+    if (searchParams.get('toast') === 'no-match') {
+      setToast(t('rooms.noMatchToast'));
+      window.history.replaceState({}, '', '/rooms');
+      const timer = setTimeout(() => setToast(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, t]);
 
   useEffect(() => {
     setLoading(true);
@@ -61,6 +81,12 @@ export default function RoomsPage() {
           ))}
         </div>
       </div>
+
+      {toast && (
+        <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3 mb-4 text-sm text-orange-700 dark:text-orange-300 text-center animate-fade-in">
+          {toast}
+        </div>
+      )}
 
       {isDemoMode && (
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4 text-sm text-blue-700 dark:text-blue-300 text-center">

@@ -7,15 +7,15 @@ import confetti from 'canvas-confetti';
  * Winner celebration: confetti burst + fireworks + celebration sound.
  * Renders when `trigger` becomes true.
  */
-export default function WinnerCelebration({ trigger }: { trigger: boolean }) {
+export default function WinnerCelebration({ trigger, muted = false }: { trigger: boolean; muted?: boolean }) {
   const hasTriggered = useRef(false);
 
   useEffect(() => {
     if (!trigger || hasTriggered.current) return;
     hasTriggered.current = true;
 
-    // Play celebration: fanfare + crowd applause
-    try {
+    // Play celebration: fanfare + crowd applause (skip if muted)
+    if (!muted) try {
       const ctx = new AudioContext();
       const now = ctx.currentTime;
 
