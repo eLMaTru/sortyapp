@@ -5,6 +5,7 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as events from 'aws-cdk-lib/aws-events';
+import * as targets from 'aws-cdk-lib/aws-events-targets';
 import { Construct } from 'constructs';
 import { Tables } from './database-stack';
 import { Queues } from './messaging-stack';
@@ -87,6 +88,14 @@ export class ApiStack extends cdk.Stack {
     const adminFn = createFn('AdminHandler', 'admin.handler.ts');
     const webhooksFn = createFn('WebhooksHandler', 'webhooks.handler.ts');
 
+    // ─── Sweeper Lambda (EventBridge: finalize stuck COUNTDOWN draws) ─────────
+    const sweeperFn = createFn('SweeperHandler', 'sweeper.handler.ts');
+
+    new events.Rule(this, 'SweeperSchedule', {
+      schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
+      targets: [new targets.LambdaFunction(sweeperFn)],
+    });
+
     // ─── Per-Lambda DynamoDB permissions (least privilege) ────────────────────
     const grantRW = (fn: lambdaNode.NodejsFunction, tables: dynamodb.Table[]) => {
       tables.forEach((t) => t.grantReadWriteData(fn));
@@ -97,6 +106,7 @@ export class ApiStack extends cdk.Stack {
     grantRW(walletFn, [props.tables.users, props.tables.transactions, props.tables.withdrawals, props.tables.dailyDeposits]);
     grantRW(adminFn, Object.values(props.tables) as dynamodb.Table[]);
     grantRW(webhooksFn, [props.tables.users, props.tables.transactions]);
+    grantRW(sweeperFn, [props.tables.draws, props.tables.templates, props.tables.users, props.tables.transactions]);
 
     // ─── SQS permissions ──────────────────────────────────────────────────────
     props.queues.emailQueue.grantSendMessages(drawsFn);

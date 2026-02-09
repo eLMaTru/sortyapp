@@ -33,6 +33,10 @@ const translations = {
     es: 'Las salas se llenan, comienza una cuenta regresiva de 15 segundos, y el resultado se determina automáticamente.',
     en: 'Rooms fill up, a 15-second countdown begins, and the result is determined automatically.',
   },
+  'home.demoCta': {
+    es: 'Empieza en Demo (10,000 créditos gratis)',
+    en: 'Start in Demo (10,000 free credits)',
+  },
 
   // ───────── Login ─────────
   'login.title': { es: 'Iniciar Sesión', en: 'Log in' },
@@ -83,6 +87,10 @@ const translations = {
   'rooms.entry': { es: 'entrada', en: 'entry' },
   'rooms.slots': { es: 'lugares', en: 'slots' },
   'rooms.spotsLeft': { es: 'lugar(es) disponible(s)', en: 'spot(s) left' },
+  'rooms.demoBanner': {
+    es: 'Estos son créditos de práctica. Cambia a Real para jugar con dinero real.',
+    en: 'These are practice credits. Switch to Real to play for real money.',
+  },
   'rooms.winner': { es: 'Seleccionado', en: 'Selected' },
 
   // ───────── Room Detail ─────────

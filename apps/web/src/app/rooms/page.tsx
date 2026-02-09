@@ -24,12 +24,18 @@ export default function RoomsPage() {
       .finally(() => setLoading(false));
   }, [mode, filter]);
 
-  // Filter: COUNTDOWN/RUNNING/FULL draws only visible to participants
-  const visibleDraws = draws.filter((draw) => {
-    if (draw.status === 'OPEN' || draw.status === 'COMPLETED') return true;
-    // FULL, COUNTDOWN, RUNNING → only show if user is a participant
-    return user && draw.participants?.includes(user.userId);
-  });
+  // Filter visibility:
+  // - OPEN: show all (user needs to see available rooms)
+  // - COMPLETED: only show draws the user participated in (last 100)
+  // - FULL/COUNTDOWN/RUNNING: only show if user is a participant
+  const visibleDraws = draws
+    .filter((draw) => {
+      if (draw.status === 'OPEN') return true;
+      // All non-OPEN statuses: only show if user participated
+      return user && draw.participants?.includes(user.userId);
+    })
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 100);
 
   const statuses = ['OPEN', 'COUNTDOWN', 'RUNNING', 'COMPLETED', ''];
 
@@ -55,6 +61,12 @@ export default function RoomsPage() {
           ))}
         </div>
       </div>
+
+      {isDemoMode && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4 text-sm text-blue-700 dark:text-blue-300 text-center">
+          {t('rooms.demoBanner')}
+        </div>
+      )}
 
       {loading ? (
         <p className="text-gray-500 dark:text-gray-400">{t('rooms.loading')}</p>

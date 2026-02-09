@@ -23,10 +23,17 @@ export default function RoomDetail() {
   const [spinDone, setSpinDone] = useState(false);
   const [error, setError] = useState('');
   const spinTriggeredRef = useRef(false);
+  const initialLoadRef = useRef(true);
 
   const fetchDraw = useCallback(async () => {
     try {
       const data = await api.draws.get(id);
+      // If draw is already COMPLETED on first load, skip animation and show results directly
+      if (initialLoadRef.current && data.status === 'COMPLETED') {
+        setSpinDone(true);
+        spinTriggeredRef.current = true;
+      }
+      initialLoadRef.current = false;
       setDraw(data);
     } catch (err: any) {
       setError(err.message);
@@ -39,9 +46,11 @@ export default function RoomDetail() {
     fetchDraw();
     // Pause polling while spinner is animating
     if (spinning && !spinDone) return;
-    const interval = setInterval(fetchDraw, 3000);
+    // Poll faster during COUNTDOWN (1s) to reduce delay before spin, 3s otherwise
+    const pollInterval = draw?.status === 'COUNTDOWN' ? 1000 : 3000;
+    const interval = setInterval(fetchDraw, pollInterval);
     return () => clearInterval(interval);
-  }, [fetchDraw, spinning, spinDone]);
+  }, [fetchDraw, spinning, spinDone, draw?.status]);
 
   useEffect(() => {
     if (draw?.status === 'COMPLETED' && draw.winnerId && !spinTriggeredRef.current) {
@@ -115,7 +124,7 @@ export default function RoomDetail() {
       </div>
 
       {draw.status === 'COUNTDOWN' && draw.countdownEndsAt && (
-        <CountdownTimer endsAt={draw.countdownEndsAt} />
+        <CountdownTimer endsAt={draw.countdownEndsAt} onCountdownEnd={fetchDraw} />
       )}
 
       <WinnerCelebration trigger={spinDone && !!draw.winnerUsername} />
@@ -224,18 +233,23 @@ export default function RoomDetail() {
   );
 }
 
-function CountdownTimer({ endsAt }: { endsAt: string }) {
+function CountdownTimer({ endsAt, onCountdownEnd }: { endsAt: string; onCountdownEnd?: () => void }) {
   const [seconds, setSeconds] = useState(0);
+  const firedRef = useRef(false);
 
   useEffect(() => {
     const update = () => {
       const remaining = Math.max(0, Math.floor((new Date(endsAt).getTime() - Date.now()) / 1000));
       setSeconds(remaining);
+      if (remaining === 0 && !firedRef.current) {
+        firedRef.current = true;
+        onCountdownEnd?.();
+      }
     };
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [endsAt]);
+  }, [endsAt, onCountdownEnd]);
 
   return (
     <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 text-center mb-6">

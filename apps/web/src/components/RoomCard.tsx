@@ -52,12 +52,14 @@ export default function RoomCard({ draw }: RoomCardProps) {
         <>
           <div className="w-full bg-gray-200 dark:bg-surface-dark-3 rounded-full h-2 mb-1">
             <div
-              className="bg-brand-500 h-2 rounded-full transition-all"
+              className={`h-2 rounded-full transition-all ${spotsLeft <= 2 ? 'bg-red-500' : 'bg-brand-500'}`}
               style={{ width: `${progress}%` }}
             />
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            {spotsLeft} {t('rooms.spotsLeft')}
+          <div className={`text-xs font-medium ${spotsLeft <= 2 ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
+            {spotsLeft <= 2
+              ? `${spotsLeft} ${t('rooms.spotsLeft')}!`
+              : `${spotsLeft} ${t('rooms.spotsLeft')}`}
           </div>
         </>
       )}

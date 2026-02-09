@@ -334,17 +334,33 @@ class DrawService {
       throw new AppError(400, 'Draw is not in countdown state');
     }
 
-    // Mark as RUNNING
-    await ddb.send(new UpdateCommand({
-      TableName: tables.draws,
-      Key: { drawId },
-      UpdateExpression: 'SET #status = :running, updatedAt = :now',
-      ExpressionAttributeNames: { '#status': 'status' },
-      ExpressionAttributeValues: { ':running': 'RUNNING', ':now': new Date().toISOString() },
-    }));
+    // Mark as RUNNING (conditional: only if still COUNTDOWN or FULL — prevents double finalization)
+    try {
+      await ddb.send(new UpdateCommand({
+        TableName: tables.draws,
+        Key: { drawId },
+        UpdateExpression: 'SET #status = :running, updatedAt = :now',
+        ConditionExpression: '#status IN (:countdown, :full)',
+        ExpressionAttributeNames: { '#status': 'status' },
+        ExpressionAttributeValues: {
+          ':running': 'RUNNING',
+          ':countdown': 'COUNTDOWN',
+          ':full': 'FULL',
+          ':now': new Date().toISOString(),
+        },
+      }));
+    } catch (err: any) {
+      if (err.name === 'ConditionalCheckFailedException') {
+        console.log(`[DRAW] ${drawId} already running/completed, skipping duplicate finalization`);
+        const current = await this.getDrawRaw(drawId);
+        if (current) return current;
+        throw new AppError(404, 'Draw not found');
+      }
+      throw err;
+    }
 
-    // Select winner
-    const winnerIndex = selectWinnerIndex(draw.serverSeed!, draw.drawId, draw.participants.length);
+    // Select winner (serverSeed + publicSeed + drawId for verifiable fairness)
+    const winnerIndex = selectWinnerIndex(draw.serverSeed!, draw.publicSeed!, draw.drawId, draw.participants.length);
     const winnerId = draw.participants[winnerIndex];
     const winnerUsername = draw.participantUsernames[winnerId];
 
@@ -428,7 +444,7 @@ class DrawService {
       throw new AppError(500, 'Failed to credit winner, participants refunded');
     }
 
-    // Update draw to COMPLETED (only after credits are confirmed)
+    // Update draw to COMPLETED (conditional: only if still RUNNING — prevents double completion)
     await ddb.send(new UpdateCommand({
       TableName: tables.draws,
       Key: { drawId },
@@ -443,9 +459,11 @@ class DrawService {
             completedAt = :cat,
             updatedAt = :now
       `,
+      ConditionExpression: '#status = :running',
       ExpressionAttributeNames: { '#status': 'status' },
       ExpressionAttributeValues: {
         ':completed': 'COMPLETED',
+        ':running': 'RUNNING',
         ':wid': winnerId,
         ':wname': winnerUsername,
         ':fee': fee,

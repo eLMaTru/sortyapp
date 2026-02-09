@@ -94,6 +94,18 @@ export default function SpinWheel({ participants, winnerIndex, spinning, onSpinC
     drawWheel();
   }, [drawWheel]);
 
+  // Position wheel to show winner (no animation) for completed draws viewed after the fact
+  useEffect(() => {
+    if (winnerIndex !== undefined && !spinning && !animatingRef.current) {
+      const count = participants.length;
+      if (count === 0) return;
+      const arc = (2 * Math.PI) / count;
+      // Set rotation so winner segment center is under the pointer (top = -π/2)
+      rotationRef.current = -Math.PI / 2 - (winnerIndex * arc + arc / 2);
+      drawWheel();
+    }
+  }, [winnerIndex, spinning, participants.length, drawWheel]);
+
   // Spin animation
   useEffect(() => {
     if (!spinning || winnerIndex === undefined || animatingRef.current) return;
@@ -122,7 +134,7 @@ export default function SpinWheel({ participants, winnerIndex, spinning, onSpinC
       if (progress < 1) {
         requestAnimationFrame(animate);
       } else {
-        animatingRef.current = false;
+        // Keep animatingRef true to prevent re-triggering on re-renders
         onSpinComplete?.();
       }
     }

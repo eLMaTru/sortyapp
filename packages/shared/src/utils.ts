@@ -21,8 +21,8 @@ export function computeCommitHash(serverSeed: string, publicSeed: string): strin
   return createHash('sha256').update(serverSeed + publicSeed).digest('hex');
 }
 
-export function selectWinnerIndex(serverSeed: string, drawId: string, totalParticipants: number): number {
-  const hash = createHash('sha256').update(serverSeed + drawId).digest('hex');
+export function selectWinnerIndex(serverSeed: string, publicSeed: string, drawId: string, totalParticipants: number): number {
+  const hash = createHash('sha256').update(serverSeed + publicSeed + drawId).digest('hex');
   const value = parseInt(hash.substring(0, 8), 16);
   return value % totalParticipants;
 }

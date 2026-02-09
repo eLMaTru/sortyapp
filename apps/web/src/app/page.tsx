@@ -18,34 +18,44 @@ export default function HomePage() {
       </p>
 
       {user ? (
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
-          <Link
-            href="/rooms"
-            className="bg-brand-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-brand-600 w-full sm:w-auto"
-          >
-            {t('home.browse')}
-          </Link>
-          <Link
-            href="/wallet"
-            className="border border-gray-300 dark:border-surface-dark-3 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-surface-dark-2 w-full sm:w-auto"
-          >
-            {t('home.myWallet')}
-          </Link>
+        <div className="flex flex-col gap-3 justify-center items-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto justify-center">
+            <Link
+              href="/rooms"
+              className="bg-brand-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-brand-600 w-full sm:w-auto"
+            >
+              {t('home.browse')}
+            </Link>
+            <Link
+              href="/wallet"
+              className="border border-gray-300 dark:border-surface-dark-3 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-surface-dark-2 w-full sm:w-auto"
+            >
+              {t('home.myWallet')}
+            </Link>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {t('home.demoCta')}
+          </p>
         </div>
       ) : (
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
-          <Link
-            href="/register"
-            className="bg-brand-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-brand-600 w-full sm:w-auto"
-          >
-            {t('home.getStarted')}
-          </Link>
-          <Link
-            href="/login"
-            className="border border-gray-300 dark:border-surface-dark-3 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-surface-dark-2 w-full sm:w-auto"
-          >
-            {t('nav.login')}
-          </Link>
+        <div className="flex flex-col gap-3 justify-center items-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto justify-center">
+            <Link
+              href="/register"
+              className="bg-brand-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-brand-600 w-full sm:w-auto"
+            >
+              {t('home.getStarted')}
+            </Link>
+            <Link
+              href="/login"
+              className="border border-gray-300 dark:border-surface-dark-3 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-surface-dark-2 w-full sm:w-auto"
+            >
+              {t('nav.login')}
+            </Link>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {t('home.demoCta')}
+          </p>
         </div>
       )}
 
