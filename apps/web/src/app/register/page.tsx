@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import AmbientConfetti from '@/components/AmbientConfetti';
 
 export default function RegisterPage() {
   return (
@@ -42,6 +43,7 @@ function RegisterForm() {
 
   return (
     <div className="max-w-md mx-auto mt-16">
+      <AmbientConfetti />
       <h1 className="text-2xl font-bold mb-6 text-center text-gray-900 dark:text-white">{t('register.title')}</h1>
 
       <form onSubmit={handleSubmit} className="bg-white dark:bg-surface-dark-2 p-6 rounded-lg border border-gray-200 dark:border-surface-dark-3 space-y-4">

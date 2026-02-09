@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import AmbientConfetti from '@/components/AmbientConfetti';
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -10,6 +11,7 @@ export default function HomePage() {
 
   return (
     <div className="text-center py-10 md:py-20 px-2">
+      <AmbientConfetti />
       <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">{t('home.title')}</h1>
       <p className="text-gray-600 dark:text-gray-400 text-base md:text-lg mb-8 max-w-xl mx-auto">
         {t('home.subtitle')}

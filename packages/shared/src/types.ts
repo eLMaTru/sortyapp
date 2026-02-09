@@ -37,6 +37,7 @@ export type TransactionType =
   | 'DRAW_ENTRY'
   | 'DRAW_WIN'
   | 'DRAW_FEE'
+  | 'DRAW_REFUND'
   | 'WITHDRAWAL'
   | 'WITHDRAWAL_FEE'
   | 'REFERRAL_BONUS';

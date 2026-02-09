@@ -91,6 +91,14 @@ router.post('/draws/:drawId/force-finalize', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ─── Simulate join (dev/testing) ──────────────────────────────────────────
+router.post('/draws/:drawId/simulate-join', async (req, res, next) => {
+  try {
+    const draw = await drawService.joinDraw(req.body.userId, req.params.drawId);
+    res.json({ success: true, data: draw });
+  } catch (err) { next(err); }
+});
+
 // ─── Ensure open draws ─────────────────────────────────────────────────────
 router.post('/ensure-open-draws', async (_req, res, next) => {
   try {

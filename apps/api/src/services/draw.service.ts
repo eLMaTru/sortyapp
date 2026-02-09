@@ -374,7 +374,61 @@ class DrawService {
       completedAt,
     };
 
-    // Update draw to COMPLETED
+    // Credit winner BEFORE marking as COMPLETED to prevent lost credits
+    let winnerBalance: number;
+    try {
+      winnerBalance = await walletService.creditBalance(winnerId, draw.mode, prize);
+      await walletService.recordTransaction({
+        userId: winnerId,
+        walletMode: draw.mode,
+        type: 'DRAW_WIN',
+        amount: prize,
+        balanceAfter: winnerBalance,
+        referenceId: draw.drawId,
+        description: `Won draw ${draw.drawId.slice(0, 8)} (${creditsToUSDC(prize)} USDC)`,
+      });
+
+      // Record fee transaction (system)
+      await walletService.recordTransaction({
+        userId: 'SYSTEM',
+        walletMode: draw.mode,
+        type: 'DRAW_FEE',
+        amount: fee,
+        balanceAfter: 0,
+        referenceId: draw.drawId,
+        description: `Fee from draw ${draw.drawId.slice(0, 8)}`,
+      });
+    } catch (err) {
+      // Credit failed — refund all participants so nobody loses credits
+      console.error(`[DRAW] ${drawId} credit failed, refunding participants:`, err);
+      for (const pid of draw.participants) {
+        try {
+          const bal = await walletService.creditBalance(pid, draw.mode, draw.entryCredits);
+          await walletService.recordTransaction({
+            userId: pid,
+            walletMode: draw.mode,
+            type: 'DRAW_REFUND',
+            amount: draw.entryCredits,
+            balanceAfter: bal,
+            referenceId: draw.drawId,
+            description: `Refund draw ${draw.drawId.slice(0, 8)} (credit error)`,
+          });
+        } catch (refundErr) {
+          console.error(`[DRAW] Refund failed for ${pid}:`, refundErr);
+        }
+      }
+      // Reset draw to allow retry
+      await ddb.send(new UpdateCommand({
+        TableName: tables.draws,
+        Key: { drawId },
+        UpdateExpression: 'SET #status = :countdown, updatedAt = :now',
+        ExpressionAttributeNames: { '#status': 'status' },
+        ExpressionAttributeValues: { ':countdown': 'COUNTDOWN', ':now': new Date().toISOString() },
+      }));
+      throw new AppError(500, 'Failed to credit winner, participants refunded');
+    }
+
+    // Update draw to COMPLETED (only after credits are confirmed)
     await ddb.send(new UpdateCommand({
       TableName: tables.draws,
       Key: { drawId },
@@ -402,29 +456,6 @@ class DrawService {
         ':now': new Date().toISOString(),
       },
     }));
-
-    // Credit winner
-    const winnerBalance = await walletService.creditBalance(winnerId, draw.mode, prize);
-    await walletService.recordTransaction({
-      userId: winnerId,
-      walletMode: draw.mode,
-      type: 'DRAW_WIN',
-      amount: prize,
-      balanceAfter: winnerBalance,
-      referenceId: draw.drawId,
-      description: `Won draw ${draw.drawId.slice(0, 8)} (${creditsToUSDC(prize)} USDC)`,
-    });
-
-    // Record fee transaction (system)
-    await walletService.recordTransaction({
-      userId: 'SYSTEM',
-      walletMode: draw.mode,
-      type: 'DRAW_FEE',
-      amount: fee,
-      balanceAfter: 0,
-      referenceId: draw.drawId,
-      description: `Fee from draw ${draw.drawId.slice(0, 8)}`,
-    });
 
     // Send email notifications
     emailService.sendDrawCompletionEmails(contract).catch(console.error);

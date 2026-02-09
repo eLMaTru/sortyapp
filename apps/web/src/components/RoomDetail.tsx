@@ -8,6 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '@/lib/api';
 import SpinWheel from '@/components/SpinWheel';
 import ConfirmModal from '@/components/ConfirmModal';
+import WinnerCelebration from '@/components/WinnerCelebration';
 
 export default function RoomDetail() {
   const searchParams = useSearchParams();
@@ -109,13 +110,15 @@ export default function RoomDetail() {
           participants={participants}
           winnerIndex={winnerIndex}
           spinning={spinning}
-          onSpinComplete={() => setSpinDone(true)}
+          onSpinComplete={() => { setSpinDone(true); refreshUser(); }}
         />
       </div>
 
       {draw.status === 'COUNTDOWN' && draw.countdownEndsAt && (
         <CountdownTimer endsAt={draw.countdownEndsAt} />
       )}
+
+      <WinnerCelebration trigger={spinDone && !!draw.winnerUsername} />
 
       {draw.status === 'COMPLETED' && draw.winnerUsername && spinDone && (
         <div className="bg-accent-gold/10 border border-accent-gold/30 rounded-lg p-4 text-center mb-6 animate-fade-in">
