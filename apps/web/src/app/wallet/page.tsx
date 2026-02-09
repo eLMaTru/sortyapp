@@ -13,7 +13,7 @@ export default function WalletPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [walletAddress, setWalletAddress] = useState('');
+  const [walletAddress, setWalletAddress] = useState(user?.walletAddress || '');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -51,7 +51,10 @@ export default function WalletPage() {
       const w = await api.wallet.withdraw({ amountCredits: credits, walletAddress });
       setSuccess(`Withdrawal requested: ${w.netUSDC} USDC (fee: ${w.feeUSDC} USDC)`);
       setWithdrawAmount('');
-      setWalletAddress('');
+      // Save wallet address to profile if new/changed
+      if (walletAddress !== user.walletAddress) {
+        await api.auth.updateWalletAddress(walletAddress);
+      }
       await refreshUser();
       const [updatedW, updatedTx] = await Promise.all([
         api.wallet.withdrawals(),
@@ -148,7 +151,10 @@ export default function WalletPage() {
                 <p className="text-xs text-red-500 mt-1">{t('wallet.invalidAddress')}</p>
               )}
               {addressTouched && addressValid && (
-                <p className="text-xs text-green-500 mt-1">{t('wallet.validAddress')}</p>
+                <p className="text-xs text-green-500 mt-1">
+                  {t('wallet.validAddress')}
+                  {walletAddress === user.walletAddress && ` · ${t('wallet.savedAddress')}`}
+                </p>
               )}
               {!addressTouched && (
                 <p className="text-xs text-gray-400 mt-1">{t('wallet.walletHint')}</p>

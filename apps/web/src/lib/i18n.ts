@@ -155,6 +155,7 @@ const translations = {
     en: 'Invalid address. Must be a valid Polygon address (0x + 40 hex characters)',
   },
   'wallet.validAddress': { es: 'Dirección válida', en: 'Valid address' },
+  'wallet.savedAddress': { es: 'Guardada', en: 'Saved' },
   'wallet.submitWithdraw': { es: 'Solicitar Retiro', en: 'Request Withdrawal' },
   'wallet.processing': { es: 'Procesando...', en: 'Processing...' },
   'wallet.demoWarning': {
