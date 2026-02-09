@@ -110,6 +110,8 @@ const translations = {
   },
   'room.loading': { es: 'Cargando sorteo...', en: 'Loading draw...' },
   'room.notFound': { es: 'Sorteo no encontrado.', en: 'Draw not found.' },
+  'room.full': { es: 'Esta sala ya está llena.', en: 'This room is already full.' },
+  'room.browseOther': { es: 'Ver otras salas disponibles', en: 'Browse other available rooms' },
 
   // ───────── Confirm Modal ─────────
   'confirm.title': { es: 'Confirmar Participación', en: 'Confirm Participation' },
@@ -125,11 +127,15 @@ const translations = {
   'wallet.balance': { es: 'Balance', en: 'Balance' },
   'wallet.credits': { es: 'créditos', en: 'credits' },
   'wallet.withdraw': { es: 'Solicitar Retiro', en: 'Request Withdrawal' },
-  'wallet.amount': { es: 'Monto (USD)', en: 'Amount (USD)' },
-  'wallet.minAmount': { es: 'Mínimo $10', en: 'Min $10' },
+  'wallet.amount': { es: 'Monto en USDC', en: 'Amount in USDC' },
+  'wallet.minAmount': { es: 'Mínimo 10 USDC', en: 'Min 10 USDC' },
   'wallet.fee': { es: 'Comisión', en: 'Fee' },
   'wallet.net': { es: 'Neto', en: 'Net' },
-  'wallet.walletAddress': { es: 'Dirección Polygon', en: 'Polygon Wallet Address' },
+  'wallet.walletAddress': { es: 'Dirección de Wallet (Polygon)', en: 'Wallet Address (Polygon)' },
+  'wallet.walletHint': {
+    es: 'Dirección donde recibirás USDC en la red Polygon (ej. MetaMask, Trust Wallet)',
+    en: 'Address where you will receive USDC on the Polygon network (e.g. MetaMask, Trust Wallet)',
+  },
   'wallet.submitWithdraw': { es: 'Solicitar Retiro', en: 'Request Withdrawal' },
   'wallet.processing': { es: 'Procesando...', en: 'Processing...' },
   'wallet.demoWarning': {

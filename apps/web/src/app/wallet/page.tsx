@@ -100,6 +100,7 @@ export default function WalletPage() {
                 className="w-full border border-gray-300 dark:border-surface-dark-3 dark:bg-surface-dark rounded px-3 py-2 text-sm font-mono dark:text-white"
                 placeholder="0x..."
               />
+              <p className="text-xs text-gray-400 mt-1">{t('wallet.walletHint')}</p>
             </div>
             <button
               type="submit"

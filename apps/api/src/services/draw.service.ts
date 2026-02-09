@@ -316,6 +316,13 @@ class DrawService {
     countdownTimers.set(draw.drawId, timer);
 
     console.log(`[DRAW] ${draw.drawId} countdown started, ends at ${countdownEndsAt}`);
+
+    // Immediately create a new OPEN draw for this template so others can join
+    const template = await this.getTemplate(draw.templateId);
+    if (template?.enabled) {
+      await this.createDrawForTemplate(template, draw.mode);
+      console.log(`[DRAW] New OPEN draw created for template ${draw.templateId} (${draw.mode})`);
+    }
   }
 
   async finalizeDraw(drawId: string): Promise<Draw> {
@@ -422,10 +429,20 @@ class DrawService {
     // Send email notifications
     emailService.sendDrawCompletionEmails(contract).catch(console.error);
 
-    // Auto-create next open draw for this template
+    // Ensure an open draw exists for this template (may already exist from startCountdown)
     const template = await this.getTemplate(draw.templateId);
     if (template?.enabled) {
-      await this.createDrawForTemplate(template, draw.mode);
+      const openDraws = await ddb.send(new QueryCommand({
+        TableName: tables.draws,
+        IndexName: 'templateMode-index',
+        KeyConditionExpression: 'templateId = :tid AND #mode = :mode',
+        FilterExpression: '#status = :open',
+        ExpressionAttributeNames: { '#status': 'status', '#mode': 'mode' },
+        ExpressionAttributeValues: { ':tid': draw.templateId, ':mode': draw.mode, ':open': 'OPEN' },
+      }));
+      if (!openDraws.Items?.length) {
+        await this.createDrawForTemplate(template, draw.mode);
+      }
     }
 
     console.log(`[DRAW] ${drawId} completed. Winner: ${winnerUsername} (${creditsToUSDC(prize)} USDC)`);

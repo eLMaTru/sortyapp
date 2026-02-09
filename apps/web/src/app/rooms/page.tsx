@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useMode } from '@/contexts/ModeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '@/lib/api';
 import RoomCard from '@/components/RoomCard';
 
 export default function RoomsPage() {
+  const { user } = useAuth();
   const { mode, isDemoMode } = useMode();
   const { t } = useLanguage();
   const [draws, setDraws] = useState<any[]>([]);
@@ -21,6 +23,13 @@ export default function RoomsPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [mode, filter]);
+
+  // Filter: COUNTDOWN/RUNNING/FULL draws only visible to participants
+  const visibleDraws = draws.filter((draw) => {
+    if (draw.status === 'OPEN' || draw.status === 'COMPLETED') return true;
+    // FULL, COUNTDOWN, RUNNING → only show if user is a participant
+    return user && draw.participants?.includes(user.userId);
+  });
 
   const statuses = ['OPEN', 'COUNTDOWN', 'RUNNING', 'COMPLETED', ''];
 
@@ -49,11 +58,11 @@ export default function RoomsPage() {
 
       {loading ? (
         <p className="text-gray-500 dark:text-gray-400">{t('rooms.loading')}</p>
-      ) : draws.length === 0 ? (
+      ) : visibleDraws.length === 0 ? (
         <p className="text-gray-500 dark:text-gray-400">{t('rooms.none')}</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {draws.map((draw) => (
+          {visibleDraws.map((draw) => (
             <RoomCard key={draw.drawId} draw={draw} />
           ))}
         </div>

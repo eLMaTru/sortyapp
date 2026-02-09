@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '@/lib/api';
@@ -139,6 +140,15 @@ export default function RoomDetail() {
       {hasJoined && draw.status !== 'COMPLETED' && (
         <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-sm p-3 rounded mb-6 text-center">
           {t('room.joined')}
+        </div>
+      )}
+
+      {!hasJoined && draw.status !== 'OPEN' && draw.status !== 'COMPLETED' && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-center mb-6">
+          <p className="text-sm text-yellow-800 dark:text-yellow-300 mb-2">{t('room.full')}</p>
+          <Link href="/rooms" className="text-sm text-brand-500 hover:underline font-medium">
+            {t('room.browseOther')}
+          </Link>
         </div>
       )}
 
