@@ -13,6 +13,7 @@ export default function AdminPage() {
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
   const [draws, setDraws] = useState<any[]>([]);
+  const [drawMode, setDrawMode] = useState<'DEMO' | 'REAL'>('REAL');
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
 
@@ -20,10 +21,21 @@ export default function AdminPage() {
   const [depositAmount, setDepositAmount] = useState('');
   const [approveTxHash, setApproveTxHash] = useState('');
 
+  // Create template form
+  const [newSlots, setNewSlots] = useState('5');
+  const [newEntry, setNewEntry] = useState('');
+  const [newRequiresDeposit, setNewRequiresDeposit] = useState(false);
+
   useEffect(() => {
     if (user?.role !== 'ADMIN') return;
     loadData();
   }, [user]);
+
+  // Reload draws when mode changes
+  useEffect(() => {
+    if (user?.role !== 'ADMIN') return;
+    api.admin.draws(drawMode).then(setDraws).catch((e: any) => setErr(e.message));
+  }, [drawMode, user]);
 
   const loadData = async () => {
     try {
@@ -31,11 +43,11 @@ export default function AdminPage() {
         api.admin.users(),
         api.admin.pendingWithdrawals(),
         api.admin.templates(),
-        api.admin.draws('REAL'),
+        api.admin.draws(drawMode),
       ]);
       setUsers(u);
       setWithdrawals(w);
-      setTemplates(tpl);
+      setTemplates(tpl.sort((a: any, b: any) => (a.slots - b.slots) || ((a.entryCredits || a.entryDollars * 100) - (b.entryCredits || b.entryDollars * 100))));
       setDraws(d);
     } catch (e: any) {
       setErr(e.message);
@@ -73,6 +85,43 @@ export default function AdminPage() {
     try {
       await api.admin.ensureOpenDraws();
       setMsg('Open draws ensured for all templates');
+      await loadData();
+    } catch (e: any) { setErr(e.message); }
+  };
+
+  const handleCreateTemplate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMsg(''); setErr('');
+    try {
+      const entryDollars = parseFloat(newEntry);
+      if (!entryDollars || entryDollars <= 0) { setErr('Enter a valid entry amount'); return; }
+      await api.admin.createTemplate({
+        slots: parseInt(newSlots),
+        entryDollars,
+        requiresDeposit: newRequiresDeposit,
+        enabled: true,
+      });
+      setMsg(t('admin.templateCreated'));
+      setNewEntry('');
+      setNewRequiresDeposit(false);
+      await loadData();
+    } catch (e: any) { setErr(e.message); }
+  };
+
+  const handleToggleTemplate = async (tpl: any) => {
+    setMsg(''); setErr('');
+    try {
+      await api.admin.updateTemplate({ templateId: tpl.templateId, enabled: !tpl.enabled });
+      setMsg(t('admin.templateUpdated'));
+      await loadData();
+    } catch (e: any) { setErr(e.message); }
+  };
+
+  const handleForceFinalize = async (drawId: string) => {
+    setMsg(''); setErr('');
+    try {
+      await api.admin.forceFinalize(drawId);
+      setMsg(t('admin.drawFinalized'));
       await loadData();
     } catch (e: any) { setErr(e.message); }
   };
@@ -208,58 +257,147 @@ export default function AdminPage() {
 
       {/* Templates tab */}
       {tab === 'templates' && (
-        <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 divide-y divide-gray-200 dark:divide-surface-dark-3">
-          {templates.map((tpl) => (
-            <div key={tpl.templateId} className="px-4 py-3 flex justify-between items-center">
+        <div>
+          {/* Create template form */}
+          <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-4 mb-6">
+            <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">{t('admin.createTemplate')}</h3>
+            <form onSubmit={handleCreateTemplate} className="flex flex-col sm:flex-row gap-3 sm:items-end flex-wrap">
               <div>
-                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                  {tpl.slots} {t('rooms.slots')} &middot; {(tpl.entryCredits || tpl.entryDollars * 100).toLocaleString()} SC {t('rooms.entry')}
-                </div>
-                <div className="text-xs text-gray-400">
-                  {t('room.fee')}: {tpl.feePercent}% &middot; {t('admin.requiresDeposit')}: {tpl.requiresDeposit ? t('common.yes') : t('common.no')}
-                </div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('admin.slots')}</label>
+                <select
+                  value={newSlots}
+                  onChange={(e) => setNewSlots(e.target.value)}
+                  className="border border-gray-300 dark:border-surface-dark-3 dark:bg-surface-dark rounded px-2 py-1.5 text-sm w-20 dark:text-white"
+                >
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                </select>
               </div>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${
-                tpl.enabled
-                  ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                  : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-              }`}>
-                {tpl.enabled ? t('admin.enabled') : t('admin.disabled')}
-              </span>
-            </div>
-          ))}
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('admin.entryAmount')}</label>
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={newEntry}
+                  onChange={(e) => setNewEntry(e.target.value)}
+                  className="border border-gray-300 dark:border-surface-dark-3 dark:bg-surface-dark rounded px-2 py-1.5 text-sm w-28 dark:text-white"
+                  placeholder="e.g. 1.00"
+                />
+              </div>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={newRequiresDeposit}
+                  onChange={(e) => setNewRequiresDeposit(e.target.checked)}
+                  className="rounded"
+                />
+                {t('admin.requiresDeposit')}
+              </label>
+              <button type="submit" className="bg-brand-500 text-white px-4 py-1.5 rounded text-sm hover:bg-brand-600">
+                {t('admin.create')}
+              </button>
+            </form>
+          </div>
+
+          {/* Templates list */}
+          <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 divide-y divide-gray-200 dark:divide-surface-dark-3">
+            {templates.map((tpl) => (
+              <div key={tpl.templateId} className="px-4 py-3 flex justify-between items-center">
+                <div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">
+                    {tpl.slots} {t('rooms.slots')} &middot; {(tpl.entryCredits || tpl.entryDollars * 100).toLocaleString()} SC {t('rooms.entry')}
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {t('room.fee')}: {tpl.feePercent}% &middot; {t('admin.requiresDeposit')}: {tpl.requiresDeposit ? t('common.yes') : t('common.no')}
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleToggleTemplate(tpl)}
+                  className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+                    tpl.enabled
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50'
+                      : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50'
+                  }`}
+                >
+                  {tpl.enabled ? t('admin.enabled') : t('admin.disabled')}
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Draws tab */}
       {tab === 'draws' && (
         <div>
-          <button
-            onClick={handleEnsureDraws}
-            className="mb-4 bg-brand-500 text-white px-4 py-2 rounded text-sm hover:bg-brand-600"
-          >
-            {t('admin.ensureDraws')}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+            <button
+              onClick={handleEnsureDraws}
+              className="bg-brand-500 text-white px-4 py-2 rounded text-sm hover:bg-brand-600"
+            >
+              {t('admin.ensureDraws')}
+            </button>
+            <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-surface-dark-3 w-fit">
+              <button
+                onClick={() => setDrawMode('DEMO')}
+                className={`px-4 py-2 text-xs font-semibold transition-colors ${
+                  drawMode === 'DEMO'
+                    ? 'bg-demo text-white'
+                    : 'bg-white dark:bg-surface-dark text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-surface-dark-2'
+                }`}
+              >
+                DEMO
+              </button>
+              <button
+                onClick={() => setDrawMode('REAL')}
+                className={`px-4 py-2 text-xs font-semibold transition-colors ${
+                  drawMode === 'REAL'
+                    ? 'bg-real text-white'
+                    : 'bg-white dark:bg-surface-dark text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-surface-dark-2'
+                }`}
+              >
+                REAL
+              </button>
+            </div>
+          </div>
           <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 divide-y divide-gray-200 dark:divide-surface-dark-3">
-            {draws.map((d) => (
-              <div key={d.drawId} className="px-4 py-3 flex justify-between items-center">
-                <div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">
-                    #{d.drawId.slice(0, 8)} &middot; {d.totalSlots} {t('rooms.slots')} &middot; {(d.entryCredits || d.entryDollars * 100).toLocaleString()} SC
+            {draws.length === 0 ? (
+              <p className="p-4 text-sm text-gray-500 dark:text-gray-400">{t('admin.noDraws')}</p>
+            ) : (
+              draws.map((d) => (
+                <div key={d.drawId} className="px-4 py-3 flex justify-between items-center">
+                  <div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      #{d.drawId.slice(0, 8)} &middot; {d.totalSlots} {t('rooms.slots')} &middot; {(d.entryCredits || d.entryDollars * 100).toLocaleString()} SC
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {d.filledSlots}/{d.totalSlots} {t('admin.filled')} &middot; {d.mode}
+                      {d.winnerId && ` · Winner: ${d.winnerUsername || d.winnerId.slice(0, 8)}`}
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-400">
-                    {d.filledSlots}/{d.totalSlots} {t('admin.filled')} &middot; {d.mode}
+                  <div className="flex items-center gap-2">
+                    {(d.status === 'COUNTDOWN' || d.status === 'RUNNING') && (
+                      <button
+                        onClick={() => handleForceFinalize(d.drawId)}
+                        className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 px-2 py-1 rounded hover:bg-orange-200 dark:hover:bg-orange-900/50"
+                      >
+                        {t('admin.forceFinalize')}
+                      </button>
+                    )}
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      d.status === 'OPEN' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                      d.status === 'COMPLETED' ? 'bg-gray-100 dark:bg-surface-dark-3 text-gray-800 dark:text-gray-300' :
+                      'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                    }`}>
+                      {d.status}
+                    </span>
                   </div>
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  d.status === 'OPEN' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
-                  d.status === 'COMPLETED' ? 'bg-gray-100 dark:bg-surface-dark-3 text-gray-800 dark:text-gray-300' :
-                  'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
-                }`}>
-                  {d.status}
-                </span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       )}

@@ -63,6 +63,8 @@ export const api = {
     templates: () => request<any[]>('/admin/templates'),
     createTemplate: (data: { slots: number; entryDollars: number; requiresDeposit: boolean; enabled: boolean }) =>
       request<any>('/admin/templates', { method: 'POST', body: JSON.stringify(data) }),
+    updateTemplate: (data: { templateId: string; enabled?: boolean; slots?: number; entryDollars?: number; requiresDeposit?: boolean }) =>
+      request<any>('/admin/templates', { method: 'PUT', body: JSON.stringify(data) }),
     draws: (mode: string) => request<any[]>(`/admin/draws?mode=${mode}`),
     forceFinalize: (drawId: string) =>
       request<any>(`/admin/draws/${drawId}/force-finalize`, { method: 'POST' }),

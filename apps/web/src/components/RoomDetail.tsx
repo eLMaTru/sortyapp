@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -12,7 +12,6 @@ import WinnerCelebration from '@/components/WinnerCelebration';
 
 export default function RoomDetail() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const id = searchParams.get('id') || '';
   const { user, refreshUser } = useAuth();
   const { t } = useLanguage();
@@ -23,7 +22,6 @@ export default function RoomDetail() {
   const [spinning, setSpinning] = useState(false);
   const [spinDone, setSpinDone] = useState(false);
   const [error, setError] = useState('');
-  const [searching, setSearching] = useState(false);
   const [muted, setMuted] = useState(() => {
     if (typeof window !== 'undefined') return localStorage.getItem('sorty-muted') === '1';
     return false;
@@ -95,25 +93,6 @@ export default function RoomDetail() {
       setError(err.message);
     } finally {
       setJoining(false);
-    }
-  };
-
-  const handlePlayAgain = async () => {
-    setSearching(true);
-    try {
-      const openDraws = await api.draws.list(draw.mode, 'OPEN');
-      const match = openDraws.find(
-        (d: any) => d.entryCredits === draw.entryCredits && d.drawId !== draw.drawId && (!user || !d.participants?.includes(user.userId))
-      );
-      if (match) {
-        router.push(`/rooms/detail?id=${match.drawId}`);
-      } else {
-        router.push('/rooms?toast=no-match');
-      }
-    } catch {
-      router.push('/rooms');
-    } finally {
-      setSearching(false);
     }
   };
 
@@ -194,15 +173,12 @@ export default function RoomDetail() {
           <p className="text-sm text-accent-orange">
             {t('room.prize')}: {draw.prize?.toLocaleString()} SC
           </p>
-          {user && (
-            <button
-              onClick={handlePlayAgain}
-              disabled={searching}
-              className="mt-3 bg-brand-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-brand-600 disabled:opacity-50 transition-colors"
-            >
-              {searching ? t('room.searching') : t('room.playAgain')}
-            </button>
-          )}
+          <Link
+            href="/rooms"
+            className="mt-3 inline-block bg-brand-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-brand-600 transition-colors"
+          >
+            {t('home.browse')}
+          </Link>
         </div>
       )}
 

@@ -191,6 +191,16 @@ const translations = {
   'admin.enabled': { es: 'Activa', en: 'Enabled' },
   'admin.disabled': { es: 'Desactivada', en: 'Disabled' },
   'admin.filled': { es: 'llenos', en: 'filled' },
+  'admin.createTemplate': { es: 'Crear Plantilla', en: 'Create Template' },
+  'admin.slots': { es: 'Lugares', en: 'Slots' },
+  'admin.entryAmount': { es: 'Entrada (USDC)', en: 'Entry (USDC)' },
+  'admin.create': { es: 'Crear', en: 'Create' },
+  'admin.forceFinalize': { es: 'Forzar', en: 'Force' },
+  'admin.drawMode': { es: 'Modo', en: 'Mode' },
+  'admin.noDraws': { es: 'Sin sorteos.', en: 'No draws.' },
+  'admin.templateCreated': { es: 'Plantilla creada', en: 'Template created' },
+  'admin.templateUpdated': { es: 'Plantilla actualizada', en: 'Template updated' },
+  'admin.drawFinalized': { es: 'Sorteo finalizado', en: 'Draw finalized' },
 
   // ───────── Common ─────────
   'common.demo': { es: 'Demo', en: 'Demo' },
