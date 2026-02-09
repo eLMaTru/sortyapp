@@ -136,6 +136,11 @@ const translations = {
     es: 'Dirección donde recibirás USDC en la red Polygon (ej. MetaMask, Trust Wallet)',
     en: 'Address where you will receive USDC on the Polygon network (e.g. MetaMask, Trust Wallet)',
   },
+  'wallet.invalidAddress': {
+    es: 'Dirección inválida. Debe ser una dirección Polygon válida (0x + 40 caracteres hex)',
+    en: 'Invalid address. Must be a valid Polygon address (0x + 40 hex characters)',
+  },
+  'wallet.validAddress': { es: 'Dirección válida', en: 'Valid address' },
   'wallet.submitWithdraw': { es: 'Solicitar Retiro', en: 'Request Withdrawal' },
   'wallet.processing': { es: 'Procesando...', en: 'Processing...' },
   'wallet.demoWarning': {

@@ -14,6 +14,9 @@ export const LoginSchema = z.object({
 });
 
 // ─── Wallet ──────────────────────────────────────────────────────────────────
+/** Validates a Polygon/EVM wallet address: 0x + 40 hex characters */
+const evmAddressRegex = /^0x[0-9a-fA-F]{40}$/;
+
 export const SimulateDepositSchema = z.object({
   userId: z.string().uuid(),
   amountCredits: z.number().int().positive(),
@@ -21,7 +24,7 @@ export const SimulateDepositSchema = z.object({
 
 export const WithdrawalRequestSchema = z.object({
   amountCredits: z.number().int().positive(),
-  walletAddress: z.string().min(10),
+  walletAddress: z.string().regex(evmAddressRegex, 'Invalid Polygon wallet address (must be 0x + 40 hex characters)'),
 });
 
 export const ApproveWithdrawalSchema = z.object({
@@ -66,5 +69,5 @@ export const ListDrawsQuerySchema = z.object({
 });
 
 export const UpdateWalletAddressSchema = z.object({
-  walletAddress: z.string().min(10),
+  walletAddress: z.string().regex(evmAddressRegex, 'Invalid Polygon wallet address (must be 0x + 40 hex characters)'),
 });

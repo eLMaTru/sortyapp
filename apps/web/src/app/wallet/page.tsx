@@ -29,17 +29,27 @@ export default function WalletPage() {
   const balance = isDemoMode ? user.demoBalance : user.realBalance;
   const filteredTx = transactions.filter((tx) => tx.walletMode === mode);
 
+  const isValidEvmAddress = (addr: string) => /^0x[0-9a-fA-F]{40}$/.test(addr);
+  const addressTouched = walletAddress.length > 0;
+  const addressValid = isValidEvmAddress(walletAddress);
+
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
-    setLoading(true);
 
+    if (!addressValid) {
+      setError(t('wallet.invalidAddress'));
+      return;
+    }
+
+    setLoading(true);
     const credits = Math.round(parseFloat(withdrawAmount) * 100);
     try {
       const w = await api.wallet.withdraw({ amountCredits: credits, walletAddress });
       setSuccess(`Withdrawal requested: ${w.netUSDC} USDC (fee: ${w.feeUSDC} USDC)`);
       setWithdrawAmount('');
+      setWalletAddress('');
       await refreshUser();
       const updated = await api.wallet.withdrawals();
       setWithdrawals(updated);
@@ -95,16 +105,30 @@ export default function WalletPage() {
               <input
                 type="text"
                 value={walletAddress}
-                onChange={(e) => setWalletAddress(e.target.value)}
+                onChange={(e) => setWalletAddress(e.target.value.trim())}
                 required
-                className="w-full border border-gray-300 dark:border-surface-dark-3 dark:bg-surface-dark rounded px-3 py-2 text-sm font-mono dark:text-white"
+                className={`w-full border rounded px-3 py-2 text-sm font-mono dark:text-white focus:outline-none focus:ring-2 ${
+                  !addressTouched
+                    ? 'border-gray-300 dark:border-surface-dark-3 dark:bg-surface-dark focus:ring-brand-500'
+                    : addressValid
+                      ? 'border-green-400 dark:border-green-600 dark:bg-surface-dark focus:ring-green-500'
+                      : 'border-red-400 dark:border-red-600 dark:bg-surface-dark focus:ring-red-500'
+                }`}
                 placeholder="0x..."
               />
-              <p className="text-xs text-gray-400 mt-1">{t('wallet.walletHint')}</p>
+              {addressTouched && !addressValid && (
+                <p className="text-xs text-red-500 mt-1">{t('wallet.invalidAddress')}</p>
+              )}
+              {addressTouched && addressValid && (
+                <p className="text-xs text-green-500 mt-1">{t('wallet.validAddress')}</p>
+              )}
+              {!addressTouched && (
+                <p className="text-xs text-gray-400 mt-1">{t('wallet.walletHint')}</p>
+              )}
             </div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (addressTouched && !addressValid)}
               className="bg-brand-500 text-white px-4 py-2 rounded text-sm font-medium hover:bg-brand-600 disabled:opacity-50"
             >
               {loading ? t('wallet.processing') : t('wallet.submitWithdraw')}
