@@ -9,38 +9,38 @@ export default function HomePage() {
   const { t } = useLanguage();
 
   return (
-    <div className="text-center py-20">
-      <h1 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">{t('home.title')}</h1>
-      <p className="text-gray-600 dark:text-gray-400 text-lg mb-8 max-w-xl mx-auto">
+    <div className="text-center py-10 md:py-20 px-2">
+      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">{t('home.title')}</h1>
+      <p className="text-gray-600 dark:text-gray-400 text-base md:text-lg mb-8 max-w-xl mx-auto">
         {t('home.subtitle')}
       </p>
 
       {user ? (
-        <div className="flex gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
           <Link
             href="/rooms"
-            className="bg-brand-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-brand-600"
+            className="bg-brand-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-brand-600 w-full sm:w-auto"
           >
             {t('home.browse')}
           </Link>
           <Link
             href="/wallet"
-            className="border border-gray-300 dark:border-surface-dark-3 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-surface-dark-2"
+            className="border border-gray-300 dark:border-surface-dark-3 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-surface-dark-2 w-full sm:w-auto"
           >
             {t('home.myWallet')}
           </Link>
         </div>
       ) : (
-        <div className="flex gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
           <Link
             href="/register"
-            className="bg-brand-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-brand-600"
+            className="bg-brand-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-brand-600 w-full sm:w-auto"
           >
             {t('home.getStarted')}
           </Link>
           <Link
             href="/login"
-            className="border border-gray-300 dark:border-surface-dark-3 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-surface-dark-2"
+            className="border border-gray-300 dark:border-surface-dark-3 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-surface-dark-2 w-full sm:w-auto"
           >
             {t('nav.login')}
           </Link>

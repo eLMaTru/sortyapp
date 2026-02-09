@@ -59,8 +59,8 @@ export default function WalletPage() {
         <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
           {isDemoMode ? t('dash.demoBalance') : t('dash.realBalance')}
         </div>
-        <div className="text-3xl font-bold text-gray-900 dark:text-white">${(balance / 100).toFixed(2)}</div>
-        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{balance.toLocaleString()} {t('wallet.credits')}</div>
+        <div className="text-3xl font-bold text-gray-900 dark:text-white">{balance.toLocaleString()} SC</div>
+        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">&asymp; ${(balance / 100).toFixed(2)} USDC</div>
       </div>
 
       {/* Withdrawal Form (Real mode only) */}
@@ -146,7 +146,7 @@ export default function WalletPage() {
                   <div className="text-xs text-gray-400">{new Date(tx.createdAt).toLocaleString()}</div>
                 </div>
                 <div className={`text-sm font-semibold ${tx.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {tx.amount >= 0 ? '+' : ''}{(tx.amount / 100).toFixed(2)}
+                  {tx.amount >= 0 ? '+' : ''}{tx.amount.toLocaleString()} SC
                 </div>
               </div>
             ))

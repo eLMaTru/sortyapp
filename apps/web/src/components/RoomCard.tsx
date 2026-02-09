@@ -8,6 +8,7 @@ interface RoomCardProps {
     drawId: string;
     totalSlots: number;
     entryDollars: number;
+    entryCredits: number;
     filledSlots: number;
     status: string;
     mode: string;
@@ -35,7 +36,7 @@ export default function RoomCard({ draw }: RoomCardProps) {
     >
       <div className="flex justify-between items-start mb-3">
         <div>
-          <span className="text-lg font-bold text-gray-900 dark:text-white">${draw.entryDollars}</span>
+          <span className="text-lg font-bold text-gray-900 dark:text-white">{(draw.entryCredits || draw.entryDollars * 100).toLocaleString()} SC</span>
           <span className="text-gray-500 dark:text-gray-400 text-sm ml-1">{t('rooms.entry')}</span>
         </div>
         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColors[draw.status] || ''}`}>
@@ -44,7 +45,7 @@ export default function RoomCard({ draw }: RoomCardProps) {
       </div>
 
       <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-        {draw.totalSlots} {t('rooms.slots')} &middot; Pool: ${draw.entryDollars * draw.totalSlots * 0.9}
+        {draw.totalSlots} {t('rooms.slots')} &middot; Pool: {((draw.entryCredits || draw.entryDollars * 100) * draw.totalSlots * 0.9).toLocaleString()} SC
       </div>
 
       {draw.status === 'OPEN' && (

@@ -86,12 +86,33 @@ class DrawService {
   }
 
   // ─── Draws CRUD ────────────────────────────────────────────────────────
-  async getDraw(drawId: string): Promise<Draw | undefined> {
+
+  /** Read draw directly from DynamoDB without auto-finalize (avoids recursion) */
+  private async getDrawRaw(drawId: string): Promise<Draw | undefined> {
     const result = await ddb.send(new GetCommand({
       TableName: tables.draws,
       Key: { drawId },
     }));
     return result.Item as Draw | undefined;
+  }
+
+  async getDraw(drawId: string): Promise<Draw | undefined> {
+    const draw = await this.getDrawRaw(drawId);
+
+    // Auto-finalize if countdown has expired (needed for Lambda where setTimeout doesn't persist)
+    if (draw && draw.status === 'COUNTDOWN' && draw.countdownEndsAt) {
+      const endsAt = new Date(draw.countdownEndsAt).getTime();
+      if (Date.now() >= endsAt) {
+        try {
+          const finalized = await this.finalizeDraw(drawId);
+          return finalized;
+        } catch (err) {
+          console.error('[DRAW] Auto-finalize failed:', err);
+        }
+      }
+    }
+
+    return draw;
   }
 
   async listDraws(mode: WalletMode, status?: DrawStatus): Promise<Draw[]> {
@@ -209,13 +230,14 @@ class DrawService {
           SET participants = list_append(participants, :uid),
               participantUsernames.#username = :uname,
               filledSlots = :filled,
-              pool = :pool,
+              #pool = :pool,
               #status = :newStatus,
               updatedAt = :now
         `,
         ConditionExpression: '#status = :open AND filledSlots < :totalSlots AND NOT contains(participants, :userId)',
         ExpressionAttributeNames: {
           '#status': 'status',
+          '#pool': 'pool',
           '#username': userId,
         },
         ExpressionAttributeValues: {
@@ -240,18 +262,18 @@ class DrawService {
 
       return updatedDraw;
     } catch (err: any) {
-      // If conditional check failed, refund the user
+      // Refund the user on any failure during draw update
+      await walletService.creditBalance(userId, draw.mode, draw.entryCredits);
+      await walletService.recordTransaction({
+        userId,
+        walletMode: draw.mode,
+        type: 'DRAW_ENTRY',
+        amount: draw.entryCredits,
+        balanceAfter: newBalance + draw.entryCredits,
+        referenceId: draw.drawId,
+        description: `Refund: draw ${draw.drawId.slice(0, 8)} join failed`,
+      });
       if (err.name === 'ConditionalCheckFailedException') {
-        await walletService.creditBalance(userId, draw.mode, draw.entryCredits);
-        await walletService.recordTransaction({
-          userId,
-          walletMode: draw.mode,
-          type: 'DRAW_ENTRY',
-          amount: draw.entryCredits,
-          balanceAfter: newBalance + draw.entryCredits,
-          referenceId: draw.drawId,
-          description: `Refund: draw ${draw.drawId.slice(0, 8)} was no longer available`,
-        });
         throw new AppError(409, 'Draw is no longer available or you already joined');
       }
       throw err;
@@ -299,7 +321,7 @@ class DrawService {
   async finalizeDraw(drawId: string): Promise<Draw> {
     countdownTimers.delete(drawId);
 
-    const draw = await this.getDraw(drawId);
+    const draw = await this.getDrawRaw(drawId);
     if (!draw) throw new AppError(404, 'Draw not found');
     if (draw.status !== 'COUNTDOWN' && draw.status !== 'FULL') {
       throw new AppError(400, 'Draw is not in countdown state');
@@ -408,12 +430,12 @@ class DrawService {
 
     console.log(`[DRAW] ${drawId} completed. Winner: ${winnerUsername} (${creditsToUSDC(prize)} USDC)`);
 
-    return (await this.getDraw(drawId))!;
+    return (await this.getDrawRaw(drawId))!;
   }
 
   // ─── Admin: force finalize (dev tool) ──────────────────────────────────
   async forceFinalize(drawId: string): Promise<Draw> {
-    const draw = await this.getDraw(drawId);
+    const draw = await this.getDrawRaw(drawId);
     if (!draw) throw new AppError(404, 'Draw not found');
     if (draw.status === 'COMPLETED') throw new AppError(400, 'Draw already completed');
 

@@ -14,7 +14,7 @@ export const WITHDRAWAL_FEE_PERCENT = 1;
 
 // Draw
 export const DRAW_FEE_PERCENT = 10;
-export const COUNTDOWN_SECONDS = 15;
+export const COUNTDOWN_SECONDS = 10;
 
 // Referral
 export const REFERRAL_BONUS_CREDITS = 500; // $5

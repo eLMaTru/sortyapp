@@ -31,7 +31,7 @@ export default function DashboardPage() {
             {isDemoMode ? t('dash.demoBalance') : t('dash.realBalance')}
           </div>
           <div className="text-3xl font-bold text-gray-900 dark:text-white">
-            ${((isDemoMode ? user.demoBalance : user.realBalance) / 100).toFixed(2)}
+            {(isDemoMode ? user.demoBalance : user.realBalance).toLocaleString()} SC
           </div>
         </div>
 
@@ -65,7 +65,7 @@ export default function DashboardPage() {
                 <div className="text-xs text-gray-400">{new Date(tx.createdAt).toLocaleString()}</div>
               </div>
               <div className={`text-sm font-semibold ${tx.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {tx.amount >= 0 ? '+' : ''}{(tx.amount / 100).toFixed(2)} USD
+                {tx.amount >= 0 ? '+' : ''}{tx.amount.toLocaleString()} SC
               </div>
             </div>
           ))}

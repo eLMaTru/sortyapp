@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 interface SpinWheelProps {
   participants: string[];
   winnerIndex?: number;
   spinning: boolean;
+  onSpinComplete?: () => void;
 }
 
 // Brand colors from the reference images: blue, red, green, orange quadrants
@@ -15,11 +16,12 @@ const COLORS = [
   '#8B5CF6', '#FFCC00',
 ];
 
-export default function SpinWheel({ participants, winnerIndex, spinning }: SpinWheelProps) {
+export default function SpinWheel({ participants, winnerIndex, spinning, onSpinComplete }: SpinWheelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [rotation, setRotation] = useState(0);
+  const rotationRef = useRef(0);
+  const animatingRef = useRef(false);
 
-  useEffect(() => {
+  const drawWheel = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -30,6 +32,7 @@ export default function SpinWheel({ participants, winnerIndex, spinning }: SpinW
     const radius = center - 10;
     const count = participants.length || 1;
     const arc = (2 * Math.PI) / count;
+    const rotation = rotationRef.current;
 
     ctx.clearRect(0, 0, size, size);
 
@@ -84,42 +87,56 @@ export default function SpinWheel({ participants, winnerIndex, spinning }: SpinW
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 1;
     ctx.stroke();
-  }, [participants, rotation]);
+  }, [participants]);
 
+  // Draw wheel on mount and when participants change
   useEffect(() => {
-    if (!spinning || winnerIndex === undefined) return;
+    drawWheel();
+  }, [drawWheel]);
+
+  // Spin animation
+  useEffect(() => {
+    if (!spinning || winnerIndex === undefined || animatingRef.current) return;
 
     const count = participants.length;
     if (count === 0) return;
 
+    animatingRef.current = true;
     const arc = (2 * Math.PI) / count;
-    const targetAngle = -(winnerIndex * arc + arc / 2) + Math.PI * 2 * 5;
+    // Pointer is at top = -π/2 in canvas coords. Land winner segment center under pointer.
+    // Add 7 full rotations for dramatic spin effect.
+    const targetAngle = -Math.PI / 2 - (winnerIndex * arc + arc / 2) + Math.PI * 2 * 7;
 
-    let start: number;
-    const duration = 4000;
+    let startTime: number | null = null;
+    const duration = 7000; // 7 seconds spin
 
     function animate(timestamp: number) {
-      if (!start) start = timestamp;
-      const elapsed = timestamp - start;
+      if (startTime === null) startTime = timestamp;
+      const elapsed = timestamp - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setRotation(eased * targetAngle);
+      // Ease-out quartic for smooth deceleration at the end
+      const eased = 1 - Math.pow(1 - progress, 4);
+      rotationRef.current = eased * targetAngle;
+      drawWheel();
 
       if (progress < 1) {
         requestAnimationFrame(animate);
+      } else {
+        animatingRef.current = false;
+        onSpinComplete?.();
       }
     }
 
     requestAnimationFrame(animate);
-  }, [spinning, winnerIndex, participants.length]);
+  }, [spinning, winnerIndex, participants.length, drawWheel, onSpinComplete]);
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center w-full max-w-[320px]">
       <canvas
         ref={canvasRef}
         width={320}
         height={320}
-        className="rounded-full shadow-lg dark:shadow-brand-500/20"
+        className="rounded-full shadow-lg dark:shadow-brand-500/20 w-full h-auto"
       />
     </div>
   );

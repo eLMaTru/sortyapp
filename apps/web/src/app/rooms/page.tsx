@@ -26,16 +26,16 @@ export default function RoomsPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+        <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
           {isDemoMode ? t('rooms.demo') : t('rooms.real')}
         </h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
           {statuses.map((s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}
-              className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+              className={`px-3 py-1 text-xs rounded-full border transition-colors whitespace-nowrap ${
                 filter === s
                   ? 'bg-brand-500 text-white border-brand-500'
                   : 'bg-white dark:bg-surface-dark-2 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-surface-dark-3 hover:bg-gray-50 dark:hover:bg-surface-dark-3'

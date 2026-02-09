@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -18,7 +18,9 @@ export default function RoomDetail() {
   const [joining, setJoining] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [spinning, setSpinning] = useState(false);
+  const [spinDone, setSpinDone] = useState(false);
   const [error, setError] = useState('');
+  const spinTriggeredRef = useRef(false);
 
   const fetchDraw = useCallback(async () => {
     try {
@@ -33,12 +35,15 @@ export default function RoomDetail() {
 
   useEffect(() => {
     fetchDraw();
+    // Pause polling while spinner is animating
+    if (spinning && !spinDone) return;
     const interval = setInterval(fetchDraw, 3000);
     return () => clearInterval(interval);
-  }, [fetchDraw]);
+  }, [fetchDraw, spinning, spinDone]);
 
   useEffect(() => {
-    if (draw?.status === 'COMPLETED' && draw.winnerId) {
+    if (draw?.status === 'COMPLETED' && draw.winnerId && !spinTriggeredRef.current) {
+      spinTriggeredRef.current = true;
       setSpinning(true);
     }
   }, [draw?.status, draw?.winnerId]);
@@ -61,7 +66,10 @@ export default function RoomDetail() {
   if (loading) return <p className="text-gray-500 dark:text-gray-400">{t('room.loading')}</p>;
   if (!draw) return <p className="text-red-500">{t('room.notFound')}</p>;
 
-  const participants = Object.values(draw.participantUsernames || {}) as string[];
+  // Map participants in draw.participants order so winnerIndex matches wheel segments
+  const participants = (draw.participants || []).map(
+    (uid: string) => draw.participantUsernames?.[uid] || uid.slice(0, 8)
+  );
   const hasJoined = user && draw.participants?.includes(user.userId);
   const canJoin = user && draw.status === 'OPEN' && !hasJoined;
 
@@ -71,16 +79,16 @@ export default function RoomDetail() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="flex justify-between items-start mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
             {t('room.title')} #{draw.drawId.slice(0, 8)}
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">
-            {draw.totalSlots} {t('rooms.slots')} &middot; ${draw.entryDollars} {t('rooms.entry')} &middot; {draw.mode} {t('room.mode')}
+          <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
+            {draw.totalSlots} {t('rooms.slots')} &middot; {draw.entryCredits?.toLocaleString()} SC {t('rooms.entry')} &middot; {draw.mode} {t('room.mode')}
           </p>
         </div>
-        <span className={`text-sm font-medium px-3 py-1 rounded-full ${
+        <span className={`text-sm font-medium px-3 py-1 rounded-full w-fit ${
           draw.status === 'OPEN' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
           draw.status === 'COUNTDOWN' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300' :
           draw.status === 'RUNNING' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
@@ -100,6 +108,7 @@ export default function RoomDetail() {
           participants={participants}
           winnerIndex={winnerIndex}
           spinning={spinning}
+          onSpinComplete={() => setSpinDone(true)}
         />
       </div>
 
@@ -107,12 +116,12 @@ export default function RoomDetail() {
         <CountdownTimer endsAt={draw.countdownEndsAt} />
       )}
 
-      {draw.status === 'COMPLETED' && draw.winnerUsername && (
-        <div className="bg-accent-gold/10 border border-accent-gold/30 rounded-lg p-4 text-center mb-6">
+      {draw.status === 'COMPLETED' && draw.winnerUsername && spinDone && (
+        <div className="bg-accent-gold/10 border border-accent-gold/30 rounded-lg p-4 text-center mb-6 animate-fade-in">
           <p className="text-sm text-accent-orange">{t('room.selectedUser')}</p>
           <p className="text-xl font-bold text-gray-900 dark:text-white">{draw.winnerUsername}</p>
           <p className="text-sm text-accent-orange">
-            {t('room.prize')}: ${(draw.prize / 100).toFixed(2)} USD
+            {t('room.prize')}: {draw.prize?.toLocaleString()} SC
           </p>
         </div>
       )}
@@ -123,7 +132,7 @@ export default function RoomDetail() {
           disabled={joining}
           className="w-full bg-room text-white py-3 rounded-lg font-medium hover:bg-room-dark disabled:opacity-50 mb-6"
         >
-          {joining ? t('room.joining') : `${t('room.participate')} - $${draw.entryDollars}`}
+          {joining ? t('room.joining') : `${t('room.participate')} - ${draw.entryCredits?.toLocaleString()} SC`}
         </button>
       )}
 
@@ -146,7 +155,7 @@ export default function RoomDetail() {
                 key={i}
                 className={`text-sm px-3 py-2 rounded ${
                   name
-                    ? uid === draw.winnerId
+                    ? uid === draw.winnerId && spinDone
                       ? 'bg-accent-gold/20 text-accent-orange font-medium'
                       : 'bg-gray-100 dark:bg-surface-dark-3 text-gray-800 dark:text-gray-300'
                     : 'bg-gray-50 dark:bg-surface-dark text-gray-400 border border-dashed border-gray-200 dark:border-surface-dark-3'
@@ -163,11 +172,11 @@ export default function RoomDetail() {
         <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">{t('room.drawDetails')}</h3>
         <dl className="grid grid-cols-2 gap-2 text-sm">
           <dt className="text-gray-500 dark:text-gray-400">{t('room.pool')}</dt>
-          <dd className="font-medium text-gray-900 dark:text-white">${(draw.pool / 100).toFixed(2)}</dd>
+          <dd className="font-medium text-gray-900 dark:text-white">{draw.pool?.toLocaleString()} SC</dd>
           <dt className="text-gray-500 dark:text-gray-400">{t('room.fee')} ({draw.feePercent}%)</dt>
-          <dd className="font-medium text-gray-900 dark:text-white">${(draw.fee / 100).toFixed(2)}</dd>
+          <dd className="font-medium text-gray-900 dark:text-white">{draw.fee?.toLocaleString()} SC</dd>
           <dt className="text-gray-500 dark:text-gray-400">{t('room.prize')}</dt>
-          <dd className="font-medium text-gray-900 dark:text-white">${(draw.prize / 100).toFixed(2)}</dd>
+          <dd className="font-medium text-gray-900 dark:text-white">{draw.prize?.toLocaleString()} SC</dd>
           <dt className="text-gray-500 dark:text-gray-400">{t('room.created')}</dt>
           <dd className="text-gray-900 dark:text-white">{new Date(draw.createdAt).toLocaleString()}</dd>
         </dl>
@@ -193,7 +202,7 @@ export default function RoomDetail() {
       <ConfirmModal
         open={showConfirm}
         title={t('confirm.title')}
-        message={`${t('confirm.message').replace('${amount}', `$${draw.entryDollars}`).replace('${credits}', draw.entryCredits)}`}
+        message={`${t('confirm.message').replace('${amount}', `${draw.entryCredits?.toLocaleString()} SC`).replace('${credits}', draw.entryCredits)}`}
         confirmLabel={t('confirm.yes')}
         onConfirm={handleJoin}
         onCancel={() => setShowConfirm(false)}

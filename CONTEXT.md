@@ -128,10 +128,12 @@ sortyapp/
 1. **dev-sortyapp-database** - 6 DynamoDB tables
 2. **dev-sortyapp-messaging** - SQS queues + EventBridge
 3. **dev-sortyapp-api** - Lambda + API Gateway
+4. **dev-sortyapp-web** - S3 + CloudFront (static site)
 
-### API Gateway Endpoint
+### Live URLs
 ```
-https://oxurm4wr9d.execute-api.us-east-1.amazonaws.com/dev/
+Web:  https://d1g6ucfnv1fy2e.cloudfront.net
+API:  https://oxurm4wr9d.execute-api.us-east-1.amazonaws.com/dev/
 ```
 
 ### DynamoDB Tables (prefix: `dev-sortyapp`)

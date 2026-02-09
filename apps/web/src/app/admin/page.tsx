@@ -92,12 +92,12 @@ export default function AdminPage() {
       {msg && <div className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm p-3 rounded mb-4">{msg}</div>}
       {err && <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm p-3 rounded mb-4">{err}</div>}
 
-      <div className="flex gap-4 border-b border-gray-200 dark:border-surface-dark-3 mb-6">
+      <div className="flex gap-3 md:gap-4 border-b border-gray-200 dark:border-surface-dark-3 mb-6 overflow-x-auto">
         {tabKeys.map((tk) => (
           <button
             key={tk}
             onClick={() => setTab(tk)}
-            className={`pb-2 text-sm font-medium ${
+            className={`pb-2 text-sm font-medium whitespace-nowrap ${
               tab === tk ? 'border-b-2 border-brand-500 text-brand-500' : 'text-gray-500 dark:text-gray-400'
             }`}
           >
@@ -111,7 +111,7 @@ export default function AdminPage() {
         <div>
           <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-4 mb-6">
             <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">{t('admin.simulateDeposit')}</h3>
-            <form onSubmit={handleDeposit} className="flex gap-3 items-end">
+            <form onSubmit={handleDeposit} className="flex flex-col sm:flex-row gap-3 sm:items-end">
               <div className="flex-1">
                 <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('admin.userId')}</label>
                 <select
@@ -147,16 +147,16 @@ export default function AdminPage() {
 
           <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 divide-y divide-gray-200 dark:divide-surface-dark-3">
             {users.map((u) => (
-              <div key={u.userId} className="px-4 py-3 flex justify-between items-center">
-                <div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">
-                    {u.username} <span className="text-gray-400">({u.email})</span>
+              <div key={u.userId} className="px-3 sm:px-4 py-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {u.username} <span className="text-gray-400 text-xs">({u.email})</span>
                   </div>
                   <div className="text-xs text-gray-400">{u.role} &middot; Ref: {u.referralCode}</div>
                 </div>
-                <div className="text-right text-sm">
-                  <div className="text-demo">Demo: ${(u.demoBalance / 100).toFixed(2)}</div>
-                  <div className="text-real">Real: ${(u.realBalance / 100).toFixed(2)}</div>
+                <div className="flex gap-3 sm:block sm:text-right text-xs sm:text-sm">
+                  <div className="text-demo">Demo: {u.demoBalance.toLocaleString()} SC</div>
+                  <div className="text-real">Real: {u.realBalance.toLocaleString()} SC</div>
                 </div>
               </div>
             ))}
@@ -213,7 +213,7 @@ export default function AdminPage() {
             <div key={tpl.templateId} className="px-4 py-3 flex justify-between items-center">
               <div>
                 <div className="text-sm font-medium text-gray-900 dark:text-white">
-                  {tpl.slots} {t('rooms.slots')} &middot; ${tpl.entryDollars} {t('rooms.entry')}
+                  {tpl.slots} {t('rooms.slots')} &middot; {(tpl.entryCredits || tpl.entryDollars * 100).toLocaleString()} SC {t('rooms.entry')}
                 </div>
                 <div className="text-xs text-gray-400">
                   {t('room.fee')}: {tpl.feePercent}% &middot; {t('admin.requiresDeposit')}: {tpl.requiresDeposit ? t('common.yes') : t('common.no')}
@@ -245,7 +245,7 @@ export default function AdminPage() {
               <div key={d.drawId} className="px-4 py-3 flex justify-between items-center">
                 <div>
                   <div className="text-sm font-medium text-gray-900 dark:text-white">
-                    #{d.drawId.slice(0, 8)} &middot; {d.totalSlots} {t('rooms.slots')} &middot; ${d.entryDollars}
+                    #{d.drawId.slice(0, 8)} &middot; {d.totalSlots} {t('rooms.slots')} &middot; {(d.entryCredits || d.entryDollars * 100).toLocaleString()} SC
                   </div>
                   <div className="text-xs text-gray-400">
                     {d.filledSlots}/{d.totalSlots} {t('admin.filled')} &middot; {d.mode}
