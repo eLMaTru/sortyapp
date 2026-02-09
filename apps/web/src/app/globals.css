@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-gray-50 text-gray-900 antialiased;
+}
+
+@keyframes spin-wheel {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(var(--spin-degrees, 1800deg)); }
+}
+
+.animate-spin-wheel {
+  animation: spin-wheel var(--spin-duration, 4s) cubic-bezier(0.17, 0.67, 0.12, 0.99) forwards;
+}
