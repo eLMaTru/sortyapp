@@ -176,6 +176,48 @@ class WalletService {
     return result.Attributes as Withdrawal;
   }
 
+  async cancelWithdrawal(userId: string, withdrawalId: string): Promise<Withdrawal> {
+    try {
+      const result = await ddb.send(new UpdateCommand({
+        TableName: tables.withdrawals,
+        Key: { withdrawalId },
+        UpdateExpression: 'SET #status = :cancelled, updatedAt = :now',
+        ConditionExpression: '#status = :pending AND userId = :uid',
+        ExpressionAttributeNames: { '#status': 'status' },
+        ExpressionAttributeValues: {
+          ':cancelled': 'CANCELLED',
+          ':pending': 'PENDING',
+          ':uid': userId,
+          ':now': new Date().toISOString(),
+        },
+        ReturnValues: 'ALL_NEW',
+      }));
+
+      if (!result.Attributes) throw new AppError(404, 'Withdrawal not found');
+      const withdrawal = result.Attributes as Withdrawal;
+
+      // Refund the balance
+      const newBalance = await this.creditBalance(userId, 'REAL', withdrawal.amountCredits);
+
+      await this.recordTransaction({
+        userId,
+        walletMode: 'REAL',
+        type: 'WITHDRAWAL',
+        amount: withdrawal.amountCredits,
+        balanceAfter: newBalance,
+        referenceId: withdrawalId,
+        description: `Withdrawal cancelled - refund of ${withdrawal.amountUSDC} USDC`,
+      });
+
+      return withdrawal;
+    } catch (err: any) {
+      if (err.name === 'ConditionalCheckFailedException') {
+        throw new AppError(400, 'Withdrawal cannot be cancelled (not PENDING or not yours)');
+      }
+      throw err;
+    }
+  }
+
   async getWithdrawals(userId: string): Promise<Withdrawal[]> {
     const result = await ddb.send(new QueryCommand({
       TableName: tables.withdrawals,

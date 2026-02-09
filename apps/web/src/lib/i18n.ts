@@ -165,6 +165,9 @@ const translations = {
   'wallet.withdrawals': { es: 'Retiros', en: 'Withdrawals' },
   'wallet.noTx': { es: 'Sin transacciones aún.', en: 'No transactions yet.' },
   'wallet.noWithdrawals': { es: 'Sin retiros aún.', en: 'No withdrawals yet.' },
+  'wallet.cancel': { es: 'Cancelar', en: 'Cancel' },
+  'wallet.cancelling': { es: 'Cancelando...', en: 'Cancelling...' },
+  'wallet.cancelled': { es: 'Retiro cancelado y saldo reembolsado.', en: 'Withdrawal cancelled and balance refunded.' },
   'wallet.referralTitle': { es: 'Tu Código de Referido', en: 'Your Referral Code' },
   'wallet.referralHint': {
     es: 'Comparte este código. Cuando alguien se registre y haga su primer depósito real, ambos ganan $5 en créditos reales.',

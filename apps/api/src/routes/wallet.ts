@@ -24,6 +24,13 @@ router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.post('/withdrawals/:id/cancel', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const withdrawal = await walletService.cancelWithdrawal(req.user!.userId, req.params.id);
+    res.json({ success: true, data: withdrawal });
+  } catch (err) { next(err); }
+});
+
 router.get('/withdrawals', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const withdrawals = await walletService.getWithdrawals(req.user!.userId);

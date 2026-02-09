@@ -51,6 +51,8 @@ export const api = {
     withdraw: (data: { amountCredits: number; walletAddress: string }) =>
       request<any>('/wallet/withdraw', { method: 'POST', body: JSON.stringify(data) }),
     withdrawals: () => request<any[]>('/wallet/withdrawals'),
+    cancelWithdrawal: (withdrawalId: string) =>
+      request<any>(`/wallet/withdrawals/${withdrawalId}/cancel`, { method: 'POST' }),
   },
 
   admin: {

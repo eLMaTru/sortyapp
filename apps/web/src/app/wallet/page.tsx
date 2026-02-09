@@ -17,6 +17,7 @@ export default function WalletPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [tab, setTab] = useState<'transactions' | 'withdrawals'>('transactions');
 
   useEffect(() => {
@@ -35,6 +36,7 @@ export default function WalletPage() {
 
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return; // Prevent double-submit
     setError('');
     setSuccess('');
 
@@ -51,12 +53,38 @@ export default function WalletPage() {
       setWithdrawAmount('');
       setWalletAddress('');
       await refreshUser();
-      const updated = await api.wallet.withdrawals();
-      setWithdrawals(updated);
+      const [updatedW, updatedTx] = await Promise.all([
+        api.wallet.withdrawals(),
+        api.wallet.transactions(),
+      ]);
+      setWithdrawals(updatedW);
+      setTransactions(updatedTx);
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancel = async (withdrawalId: string) => {
+    if (cancellingId) return; // Prevent double-click
+    setCancellingId(withdrawalId);
+    setError('');
+    setSuccess('');
+    try {
+      await api.wallet.cancelWithdrawal(withdrawalId);
+      setSuccess(t('wallet.cancelled'));
+      await refreshUser();
+      const [updatedW, updatedTx] = await Promise.all([
+        api.wallet.withdrawals(),
+        api.wallet.transactions(),
+      ]);
+      setWithdrawals(updatedW);
+      setTransactions(updatedTx);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setCancellingId(null);
     }
   };
 
@@ -186,15 +214,27 @@ export default function WalletPage() {
           ) : (
             withdrawals.map((w) => (
               <div key={w.withdrawalId} className="px-4 py-3">
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <div className="text-sm font-medium text-gray-900 dark:text-white">${w.netUSDC} USDC</div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    w.status === 'PENDING' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
-                    w.status === 'SENT' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
-                    'bg-gray-100 dark:bg-surface-dark-3 text-gray-800 dark:text-gray-300'
-                  }`}>
-                    {w.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {w.status === 'PENDING' && (
+                      <button
+                        onClick={() => handleCancel(w.withdrawalId)}
+                        disabled={cancellingId === w.withdrawalId}
+                        className="text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium disabled:opacity-50"
+                      >
+                        {cancellingId === w.withdrawalId ? t('wallet.cancelling') : t('wallet.cancel')}
+                      </button>
+                    )}
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      w.status === 'PENDING' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                      w.status === 'SENT' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                      w.status === 'CANCELLED' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
+                      'bg-gray-100 dark:bg-surface-dark-3 text-gray-800 dark:text-gray-300'
+                    }`}>
+                      {w.status}
+                    </span>
+                  </div>
                 </div>
                 <div className="text-xs text-gray-400 mt-1">
                   {new Date(w.createdAt).toLocaleString()}
