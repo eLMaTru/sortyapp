@@ -1,10 +1,29 @@
-import { ScanCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { ScanCommand, QueryCommand, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { AdminMetrics, WalletMode } from '@sortyapp/shared';
 import { ddb, tables } from '../lib/dynamo';
 
 class MetricsService {
+  /** Read metrics from cache (recomputed every 30min by sweeper) */
   async getAdminMetrics(): Promise<AdminMetrics> {
-    // Parallel queries for efficiency
+    // Read from cache first
+    try {
+      const cacheResult = await ddb.send(new GetCommand({
+        TableName: tables.cache,
+        Key: { pk: 'METRICS', sk: 'LATEST' },
+      }));
+      if (cacheResult.Item?.data) {
+        return cacheResult.Item.data as AdminMetrics;
+      }
+    } catch (err) {
+      console.error('[METRICS] Cache read failed, computing fresh:', err);
+    }
+
+    // Cache miss (first run): compute and cache
+    return this.recomputeMetrics();
+  }
+
+  /** Full recomputation: scans all tables, writes result to cache */
+  async recomputeMetrics(): Promise<AdminMetrics> {
     const [usersResult, drawsResult, withdrawalsResult] = await Promise.all([
       ddb.send(new ScanCommand({ TableName: tables.users, Select: 'COUNT' })),
       ddb.send(new ScanCommand({ TableName: tables.draws })),
@@ -27,7 +46,6 @@ class MetricsService {
     const pendingWithdrawals = withdrawals.filter((w) => w.status === 'PENDING');
     const sentWithdrawals = withdrawals.filter((w) => w.status === 'SENT');
 
-    // Recent users (registered in last 24h) — need to scan users table for this
     const usersFullResult = await ddb.send(new ScanCommand({
       TableName: tables.users,
       FilterExpression: 'createdAt > :since',
@@ -35,7 +53,7 @@ class MetricsService {
       Select: 'COUNT',
     }));
 
-    return {
+    const metrics: AdminMetrics = {
       totalUsers: usersResult.Count || 0,
       totalDrawsCompleted: completedDraws.length,
       totalDrawsOpen: openDraws.length,
@@ -46,6 +64,18 @@ class MetricsService {
       recentDraws: recentDraws.length,
       recentUsers: usersFullResult.Count || 0,
     };
+
+    // Write to cache
+    try {
+      await ddb.send(new PutCommand({
+        TableName: tables.cache,
+        Item: { pk: 'METRICS', sk: 'LATEST', data: metrics, computedAt: Date.now() },
+      }));
+    } catch (err) {
+      console.error('[METRICS] Cache write failed:', err);
+    }
+
+    return metrics;
   }
 }
 

@@ -40,6 +40,11 @@ export default function RoomDetail() {
     });
   };
 
+  // Scroll to top when entering a room
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
+
   const fetchDraw = useCallback(async () => {
     try {
       const data = await api.draws.get(id);
@@ -215,11 +220,6 @@ export default function RoomDetail() {
         </div>
       )}
 
-      {/* Chat section */}
-      {draw.filledSlots > 0 && (isChatActive || draw.status === 'COMPLETED') && (
-        <RoomChat drawId={id} draw={draw} isChatActive={!!isChatActive} />
-      )}
-
       <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-4 mb-6">
         <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">
           {t('room.participants')} ({draw.filledSlots}/{draw.totalSlots})
@@ -260,6 +260,11 @@ export default function RoomDetail() {
         </dl>
       </div>
 
+      {/* Chat section - below draw details */}
+      {draw.filledSlots > 0 && (isChatActive || draw.status === 'COMPLETED') && (
+        <RoomChat drawId={id} draw={draw} isChatActive={!!isChatActive} />
+      )}
+
       {draw.status === 'COMPLETED' && draw.commitHash && (
         <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-4">
           <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">{t('room.fairness')}</h3>
@@ -297,7 +302,7 @@ function RoomChat({ drawId, draw, isChatActive }: { drawId: string; draw: any; i
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [chatError, setChatError] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const hasJoined = user && draw.participants?.includes(user.userId);
 
   // Count user's messages in this draw
@@ -317,9 +322,11 @@ function RoomChat({ drawId, draw, isChatActive }: { drawId: string; draw: any; i
     return () => clearInterval(interval);
   }, [drawId]);
 
-  // Auto-scroll on new messages
+  // Auto-scroll within chat container only (not the whole page)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, [messages.length]);
 
   const handleSend = async (e: React.FormEvent) => {
@@ -348,7 +355,7 @@ function RoomChat({ drawId, draw, isChatActive }: { drawId: string; draw: any; i
       </div>
 
       {/* Messages */}
-      <div className="h-40 overflow-y-auto px-4 py-2 space-y-1.5">
+      <div ref={chatContainerRef} className="h-40 overflow-y-auto px-4 py-2 space-y-1.5">
         {messages.length === 0 ? (
           <p className="text-xs text-gray-400 text-center py-4">{t('chat.noMessages')}</p>
         ) : (
@@ -363,7 +370,6 @@ function RoomChat({ drawId, draw, isChatActive }: { drawId: string; draw: any; i
             </div>
           ))
         )}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}

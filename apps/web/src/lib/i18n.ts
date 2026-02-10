@@ -225,6 +225,7 @@ const translations = {
   'rankings.winRate': { es: '% Victorias', en: 'Win Rate' },
   'rankings.totalWon': { es: 'Total Ganado', en: 'Total Won' },
   'rankings.noData': { es: 'Sin datos de clasificación aún.', en: 'No ranking data yet.' },
+  'rankings.demoFallback': { es: 'Mostrando datos de práctica. Los rankings reales se actualizarán cuando haya partidas reales.', en: 'Showing practice data. Real rankings will update when real games are played.' },
 
   // ───────── Admin Metrics ─────────
   'admin.metrics': { es: 'Métricas', en: 'Metrics' },
@@ -237,6 +238,11 @@ const translations = {
   'admin.sentWithdrawals': { es: 'Retiros Enviados', en: 'Sent Withdrawals' },
   'admin.recentDraws': { es: 'Sorteos (24h)', en: 'Draws (24h)' },
   'admin.recentUsers': { es: 'Nuevos Usuarios (24h)', en: 'New Users (24h)' },
+
+  // ───────── Ticker ─────────
+  'ticker.won': { es: 'ganó', en: 'won' },
+  'ticker.wins': { es: 'victorias', en: 'wins' },
+  'ticker.topPlayer': { es: 'Top jugador', en: 'Top player' },
 
   // ───────── Common ─────────
   'common.demo': { es: 'Demo', en: 'Demo' },

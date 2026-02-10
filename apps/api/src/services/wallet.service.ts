@@ -265,24 +265,34 @@ class WalletService {
 
   // ─── First deposit referral handling ─────────────────────────────────────
   private async handleFirstDeposit(userId: string): Promise<void> {
-    const result = await ddb.send(new UpdateCommand({
-      TableName: tables.users,
-      Key: { userId },
-      UpdateExpression: 'SET firstRealDeposit = :true, updatedAt = :now',
-      ConditionExpression: 'firstRealDeposit = :false',
-      ExpressionAttributeValues: {
-        ':true': true,
-        ':false': false,
-        ':now': new Date().toISOString(),
-      },
-      ReturnValues: 'ALL_NEW',
-    }));
+    let result;
+    try {
+      result = await ddb.send(new UpdateCommand({
+        TableName: tables.users,
+        Key: { userId },
+        UpdateExpression: 'SET firstRealDeposit = :true, updatedAt = :now',
+        ConditionExpression: 'firstRealDeposit = :false',
+        ExpressionAttributeValues: {
+          ':true': true,
+          ':false': false,
+          ':now': new Date().toISOString(),
+        },
+        ReturnValues: 'ALL_NEW',
+      }));
+    } catch (err: any) {
+      if (err.name === 'ConditionalCheckFailedException') {
+        // Not the first deposit — skip referral bonus
+        return;
+      }
+      throw err;
+    }
 
     const user = result.Attributes as any;
     if (!user?.referredBy) return;
 
-    // Credit referrer with bonus
     const bonus = config.referralBonusCredits;
+
+    // Credit referrer with bonus
     const referrerBalance = await this.creditBalance(user.referredBy, 'REAL', bonus);
     await this.recordTransaction({
       userId: user.referredBy,
@@ -292,6 +302,18 @@ class WalletService {
       balanceAfter: referrerBalance,
       referenceId: userId,
       description: `Referral bonus for inviting ${user.username}`,
+    });
+
+    // Credit referred user (depositor) with bonus too
+    const userBalance = await this.creditBalance(userId, 'REAL', bonus);
+    await this.recordTransaction({
+      userId,
+      walletMode: 'REAL',
+      type: 'REFERRAL_BONUS',
+      amount: bonus,
+      balanceAfter: userBalance,
+      referenceId: user.referredBy,
+      description: 'Referral bonus for joining via referral',
     });
   }
 }

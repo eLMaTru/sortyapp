@@ -15,6 +15,7 @@ export interface Tables {
   templates: dynamodb.Table;
   dailyDeposits: dynamodb.Table;
   chatMessages: dynamodb.Table;
+  cache: dynamodb.Table;
 }
 
 export class DatabaseStack extends cdk.Stack {
@@ -121,6 +122,16 @@ export class DatabaseStack extends cdk.Stack {
       timeToLiveAttribute: 'expiresAt',
     });
 
-    this.tables = { users, draws, transactions, withdrawals, templates, dailyDeposits, chatMessages };
+    // Cache table (pre-computed rankings, metrics, etc.)
+    const cache = new dynamodb.Table(this, 'Cache', {
+      tableName: `${props.prefix}-cache`,
+      partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'sk', type: dynamodb.AttributeType.STRING },
+      billingMode: billing,
+      removalPolicy,
+      timeToLiveAttribute: 'expiresAt',
+    });
+
+    this.tables = { users, draws, transactions, withdrawals, templates, dailyDeposits, chatMessages, cache };
   }
 }

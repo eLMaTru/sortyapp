@@ -1,34 +1,46 @@
-import { ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { QueryCommand, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, tables } from '../lib/dynamo';
 import { drawService } from '../services/draw.service';
-import { walletService } from '../services/wallet.service';
-
-const DEMO_BOT_MIN_BALANCE = 10_000; // 100 USDC in credits
-const DEMO_BOT_TOPUP_AMOUNT = 100_000; // 1000 USDC in credits
+import { metricsService } from '../services/metrics.service';
 
 /**
- * EventBridge sweeper: runs every 1 minute.
- * 1. Finalizes stuck COUNTDOWN draws (safety net for polling-based finalization)
- * 2. Auto-fills OPEN DEMO rooms with bots, leaving 1 slot for real users
- * 3. Auto-tops-up demo bot balances when low
+ * EventBridge sweeper: runs every 5 minutes.
+ * 1. Finalizes stuck COUNTDOWN draws (safety net — getDraw auto-finalizes on poll)
+ * 2. Recomputes cached rankings (daily) and metrics (every 30 min)
+ *
+ * Demo rooms are NOT filled here — bots join instantly via autoFillDemoBots
+ * when a real user clicks "Participate".
  */
 export const handler = async (): Promise<void> => {
   await finalizeStuckDraws();
-  await fillDemoRooms();
+  await recomputeCachedData();
 };
 
-// ─── Task 1: Finalize stuck COUNTDOWN draws ──────────────────────────────────
+// ─── Finalize stuck COUNTDOWN draws (GSI query, no scan) ─────────────────
 async function finalizeStuckDraws(): Promise<void> {
   const now = new Date().toISOString();
 
-  const result = await ddb.send(new ScanCommand({
-    TableName: tables.draws,
-    FilterExpression: '#status = :countdown AND countdownEndsAt <= :now',
-    ExpressionAttributeNames: { '#status': 'status' },
-    ExpressionAttributeValues: { ':countdown': 'COUNTDOWN', ':now': now },
-  }));
+  // Query COUNTDOWN draws for both modes via GSI (parallel)
+  const [demoResult, realResult] = await Promise.all([
+    ddb.send(new QueryCommand({
+      TableName: tables.draws,
+      IndexName: 'modeStatus-index',
+      KeyConditionExpression: '#mode = :mode AND #status = :status',
+      FilterExpression: 'countdownEndsAt <= :now',
+      ExpressionAttributeNames: { '#mode': 'mode', '#status': 'status' },
+      ExpressionAttributeValues: { ':mode': 'DEMO', ':status': 'COUNTDOWN', ':now': now },
+    })),
+    ddb.send(new QueryCommand({
+      TableName: tables.draws,
+      IndexName: 'modeStatus-index',
+      KeyConditionExpression: '#mode = :mode AND #status = :status',
+      FilterExpression: 'countdownEndsAt <= :now',
+      ExpressionAttributeNames: { '#mode': 'mode', '#status': 'status' },
+      ExpressionAttributeValues: { ':mode': 'REAL', ':status': 'COUNTDOWN', ':now': now },
+    })),
+  ]);
 
-  const stuckDraws = result.Items || [];
+  const stuckDraws = [...(demoResult.Items || []), ...(realResult.Items || [])];
   if (stuckDraws.length === 0) return;
 
   console.log(`[SWEEPER] Found ${stuckDraws.length} stuck COUNTDOWN draw(s)`);
@@ -47,71 +59,54 @@ async function finalizeStuckDraws(): Promise<void> {
   }
 }
 
-// ─── Task 2: Auto-fill OPEN DEMO rooms with bots ────────────────────────────
-async function fillDemoRooms(): Promise<void> {
-  // Get all demo bot users (username starts with "Demo")
-  const usersResult = await ddb.send(new ScanCommand({
-    TableName: tables.users,
-    FilterExpression: 'begins_with(username, :prefix)',
-    ExpressionAttributeValues: { ':prefix': 'Demo' },
-  }));
-  const bots = usersResult.Items || [];
-  if (bots.length === 0) return;
+// ─── Recompute cached data periodically ──────────────────────────────────
+async function recomputeCachedData(): Promise<void> {
+  const now = Date.now();
+  const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+  const THIRTY_MIN_MS = 30 * 60 * 1000;
 
-  // Top up any bots with low demo balance
-  for (const bot of bots) {
-    if ((bot.demoBalance || 0) < DEMO_BOT_MIN_BALANCE) {
-      try {
-        await walletService.creditBalance(bot.userId, 'DEMO', DEMO_BOT_TOPUP_AMOUNT);
-        await walletService.recordTransaction({
-          userId: bot.userId,
-          walletMode: 'DEMO',
-          type: 'DEPOSIT',
-          amount: DEMO_BOT_TOPUP_AMOUNT,
-          balanceAfter: (bot.demoBalance || 0) + DEMO_BOT_TOPUP_AMOUNT,
-          referenceId: 'sweeper-topup',
-          description: 'Auto top-up demo bot balance',
-        });
-        console.log(`[SWEEPER] Topped up bot ${bot.username} with ${DEMO_BOT_TOPUP_AMOUNT} SC`);
-      } catch (err) {
-        console.error(`[SWEEPER] Failed to top up bot ${bot.username}:`, err);
-      }
+  // Check rankings staleness
+  try {
+    const rankingsCache = await ddb.send(new GetCommand({
+      TableName: tables.cache,
+      Key: { pk: 'RANKINGS', sk: 'LAST_COMPUTED' },
+    }));
+    const lastRankings = rankingsCache.Item?.computedAt || 0;
+
+    if (now - lastRankings > ONE_DAY_MS) {
+      console.log('[SWEEPER] Recomputing rankings...');
+      await Promise.all([
+        drawService.recomputeRankings('DEMO'),
+        drawService.recomputeRankings('REAL'),
+      ]);
+      await ddb.send(new PutCommand({
+        TableName: tables.cache,
+        Item: { pk: 'RANKINGS', sk: 'LAST_COMPUTED', computedAt: now },
+      }));
+      console.log('[SWEEPER] Rankings recomputed');
     }
+  } catch (err) {
+    console.error('[SWEEPER] Rankings recomputation failed:', err);
   }
 
-  // Get all OPEN DEMO draws
-  const drawsResult = await ddb.send(new ScanCommand({
-    TableName: tables.draws,
-    FilterExpression: '#status = :open AND #mode = :demo',
-    ExpressionAttributeNames: { '#status': 'status', '#mode': 'mode' },
-    ExpressionAttributeValues: { ':open': 'OPEN', ':demo': 'DEMO' },
-  }));
+  // Check metrics staleness
+  try {
+    const metricsCache = await ddb.send(new GetCommand({
+      TableName: tables.cache,
+      Key: { pk: 'METRICS', sk: 'LAST_COMPUTED' },
+    }));
+    const lastMetrics = metricsCache.Item?.computedAt || 0;
 
-  const openDraws = drawsResult.Items || [];
-  if (openDraws.length === 0) return;
-
-  for (const draw of openDraws) {
-    const slotsNeeded = draw.totalSlots - 1 - draw.filledSlots; // Leave 1 slot for user
-    if (slotsNeeded <= 0) continue;
-
-    // Pick bots not already in this draw
-    const availableBots = bots.filter(
-      (b: any) => !draw.participants?.includes(b.userId)
-    );
-
-    // Shuffle and pick slotsNeeded bots
-    const shuffled = availableBots.sort(() => Math.random() - 0.5);
-    const botsToJoin = shuffled.slice(0, slotsNeeded);
-
-    for (const bot of botsToJoin) {
-      try {
-        await drawService.joinDraw(bot.userId, draw.drawId);
-        console.log(`[SWEEPER] Bot ${bot.username} joined draw ${draw.drawId.slice(0, 8)} (${draw.entryCredits} SC)`);
-      } catch (err: any) {
-        // Draw may have filled or bot already joined — skip
-        console.log(`[SWEEPER] Bot ${bot.username} failed to join ${draw.drawId.slice(0, 8)}: ${err.message}`);
-        break; // If one fails (draw full/closed), stop trying for this draw
-      }
+    if (now - lastMetrics > THIRTY_MIN_MS) {
+      console.log('[SWEEPER] Recomputing metrics...');
+      await metricsService.recomputeMetrics();
+      await ddb.send(new PutCommand({
+        TableName: tables.cache,
+        Item: { pk: 'METRICS', sk: 'LAST_COMPUTED', computedAt: now },
+      }));
+      console.log('[SWEEPER] Metrics recomputed');
     }
+  } catch (err) {
+    console.error('[SWEEPER] Metrics recomputation failed:', err);
   }
 }

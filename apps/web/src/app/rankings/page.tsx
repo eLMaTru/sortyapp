@@ -1,33 +1,47 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useMode } from '@/contexts/ModeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '@/lib/api';
 
 export default function RankingsPage() {
-  const { mode, isDemoMode } = useMode();
   const { t } = useLanguage();
   const [rankings, setRankings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [displayMode, setDisplayMode] = useState<'REAL' | 'DEMO'>('REAL');
 
   useEffect(() => {
-    setLoading(true);
-    api.draws.rankings(mode)
-      .then(setRankings)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [mode]);
+    const fetchRankings = async () => {
+      setLoading(true);
+      try {
+        // Always show REAL rankings first
+        let data = await api.draws.rankings('REAL');
+        let mode: 'REAL' | 'DEMO' = 'REAL';
+        if (data.length === 0) {
+          // Fallback to DEMO if no real data yet
+          data = await api.draws.rankings('DEMO');
+          mode = 'DEMO';
+        }
+        setRankings(data);
+        setDisplayMode(mode);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRankings();
+  }, []);
 
   return (
     <div className="max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">{t('rankings.title')}</h1>
 
-      <div className={`text-xs font-medium px-3 py-1.5 rounded-full inline-block mb-4 ${
-        isDemoMode ? 'bg-demo/20 text-demo' : 'bg-real/20 text-real'
-      }`}>
-        {isDemoMode ? 'DEMO' : 'REAL'}
-      </div>
+      {displayMode === 'DEMO' && rankings.length > 0 && (
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+          {t('rankings.demoFallback')}
+        </p>
+      )}
 
       {loading ? (
         <p className="text-gray-500 dark:text-gray-400">{t('common.loading')}</p>

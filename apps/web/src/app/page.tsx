@@ -1,13 +1,43 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AmbientConfetti from '@/components/AmbientConfetti';
+import { api } from '@/lib/api';
 
 export default function HomePage() {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const [tickerItems, setTickerItems] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchTicker = async () => {
+      try {
+        // Try REAL first, fallback to DEMO
+        let rankings = await api.draws.rankings('REAL');
+        if (rankings.length === 0) {
+          rankings = await api.draws.rankings('DEMO');
+        }
+        if (rankings.length === 0) return;
+
+        const items: string[] = [];
+        // Top player highlight
+        if (rankings[0]) {
+          items.push(`${t('ticker.topPlayer')}: ${rankings[0].username} - ${rankings[0].wins} ${t('ticker.wins')}`);
+        }
+        // Recent winners
+        for (const r of rankings.slice(0, 8)) {
+          if (r.totalWinnings > 0) {
+            items.push(`${r.username} ${t('ticker.won')} ${r.totalWinnings.toLocaleString()} SC`);
+          }
+        }
+        setTickerItems(items);
+      } catch { /* ignore */ }
+    };
+    fetchTicker();
+  }, [t]);
 
   return (
     <div className="text-center py-10 md:py-20 px-2">
@@ -79,6 +109,28 @@ export default function HomePage() {
           </p>
         </div>
       </div>
+
+      {/* Scrolling ticker */}
+      {tickerItems.length > 0 && (
+        <div className="mt-16 overflow-hidden bg-brand-500/10 dark:bg-surface-dark-2 border-y border-brand-500/20 dark:border-surface-dark-3 py-2.5">
+          <div className="ticker-scroll flex whitespace-nowrap gap-8 text-sm font-medium text-brand-600 dark:text-brand-400">
+            {[...tickerItems, ...tickerItems].map((item, i) => (
+              <span key={i} className="inline-flex items-center gap-1.5 shrink-0">
+                <span className="text-accent-gold">&#9733;</span> {item}
+              </span>
+            ))}
+          </div>
+          <style jsx>{`
+            .ticker-scroll {
+              animation: ticker 25s linear infinite;
+            }
+            @keyframes ticker {
+              0% { transform: translateX(0); }
+              100% { transform: translateX(-50%); }
+            }
+          `}</style>
+        </div>
+      )}
     </div>
   );
 }

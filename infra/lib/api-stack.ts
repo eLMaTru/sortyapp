@@ -92,7 +92,7 @@ export class ApiStack extends cdk.Stack {
     const sweeperFn = createFn('SweeperHandler', 'sweeper.handler.ts');
 
     new events.Rule(this, 'SweeperSchedule', {
-      schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
+      schedule: events.Schedule.rate(cdk.Duration.minutes(5)),
       targets: [new targets.LambdaFunction(sweeperFn)],
     });
 
@@ -101,12 +101,12 @@ export class ApiStack extends cdk.Stack {
       tables.forEach((t) => t.grantReadWriteData(fn));
     };
 
-    grantRW(authFn, [props.tables.users, props.tables.transactions]);
-    grantRW(drawsFn, [props.tables.draws, props.tables.templates, props.tables.users, props.tables.transactions, props.tables.chatMessages]);
+    grantRW(authFn, [props.tables.users, props.tables.transactions, props.tables.cache]);
+    grantRW(drawsFn, [props.tables.draws, props.tables.templates, props.tables.users, props.tables.transactions, props.tables.chatMessages, props.tables.cache]);
     grantRW(walletFn, [props.tables.users, props.tables.transactions, props.tables.withdrawals, props.tables.dailyDeposits]);
     grantRW(adminFn, Object.values(props.tables) as dynamodb.Table[]);
     grantRW(webhooksFn, [props.tables.users, props.tables.transactions]);
-    grantRW(sweeperFn, [props.tables.draws, props.tables.templates, props.tables.users, props.tables.transactions]);
+    grantRW(sweeperFn, [props.tables.draws, props.tables.templates, props.tables.users, props.tables.transactions, props.tables.cache, props.tables.withdrawals]);
 
     // ─── SQS permissions ──────────────────────────────────────────────────────
     props.queues.emailQueue.grantSendMessages(drawsFn);

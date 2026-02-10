@@ -15,6 +15,7 @@ import {
   DRAW_FEE_PERCENT,
   COUNTDOWN_SECONDS,
   CREDITS_PER_USDC,
+  DEMO_INITIAL_CREDITS,
   generateSeed,
   computeCommitHash,
   selectWinnerIndex,
@@ -28,6 +29,31 @@ import { userService } from './user.service';
 
 // In-memory countdown timers (local dev). In production, use EventBridge.
 const countdownTimers = new Map<string, NodeJS.Timeout>();
+
+// Module-level cache for demo bots (persists across warm Lambda invocations)
+let cachedDemoBots: any[] | null = null;
+let demoBotsCachedAt = 0;
+const DEMO_BOT_CACHE_TTL_MS = 5 * 60 * 1000;
+
+async function getDemoBotsCached(): Promise<any[]> {
+  const now = Date.now();
+  if (cachedDemoBots && now - demoBotsCachedAt < DEMO_BOT_CACHE_TTL_MS) {
+    return cachedDemoBots;
+  }
+  const result = await ddb.send(new ScanCommand({
+    TableName: tables.users,
+    FilterExpression: 'begins_with(username, :prefix)',
+    ExpressionAttributeValues: { ':prefix': 'Demo' },
+  }));
+  cachedDemoBots = result.Items || [];
+  demoBotsCachedAt = now;
+  return cachedDemoBots;
+}
+
+function maskUsername(name: string): string {
+  if (name.length <= 4) return name[0] + '***';
+  return name.slice(0, 3) + '***' + name.slice(-2);
+}
 
 class DrawService {
   // ─── Templates ─────────────────────────────────────────────────────────
@@ -293,13 +319,8 @@ class DrawService {
     const slotsNeeded = draw.totalSlots - draw.filledSlots;
     if (slotsNeeded <= 0) return;
 
-    // Get demo bots (username starts with "Demo")
-    const usersResult = await ddb.send(new ScanCommand({
-      TableName: tables.users,
-      FilterExpression: 'begins_with(username, :prefix)',
-      ExpressionAttributeValues: { ':prefix': 'Demo' },
-    }));
-    const bots = usersResult.Items || [];
+    // Get demo bots (cached at module level, 5min TTL)
+    const bots = await getDemoBotsCached();
     if (bots.length === 0) return;
 
     // Pick random bots not already in this draw
@@ -309,8 +330,8 @@ class DrawService {
       .slice(0, slotsNeeded);
 
     for (const bot of availableBots) {
-      // Top up demo balance if insufficient
-      if ((bot.demoBalance || 0) < draw.entryCredits) {
+      // Top up demo balance if below 10K SC
+      if ((bot.demoBalance || 0) < DEMO_INITIAL_CREDITS) {
         await walletService.creditBalance(bot.userId, 'DEMO', 100_000);
       }
       try {
@@ -543,8 +564,26 @@ class DrawService {
     return (await this.getDrawRaw(drawId))!;
   }
 
-  // ─── Rankings ────────────────────────────────────────────────────────────
+  // ─── Rankings (cached: recomputed daily by sweeper) ─────────────────────
   async getRankings(mode: WalletMode): Promise<any[]> {
+    // Read from cache first
+    try {
+      const cacheResult = await ddb.send(new GetCommand({
+        TableName: tables.cache,
+        Key: { pk: 'RANKINGS', sk: mode },
+      }));
+      if (cacheResult.Item?.data) {
+        return cacheResult.Item.data;
+      }
+    } catch (err) {
+      console.error('[RANKINGS] Cache read failed, computing fresh:', err);
+    }
+
+    // Cache miss (first run): compute and cache
+    return this.recomputeRankings(mode);
+  }
+
+  async recomputeRankings(mode: WalletMode): Promise<any[]> {
     const result = await ddb.send(new QueryCommand({
       TableName: tables.draws,
       IndexName: 'modeStatus-index',
@@ -554,10 +593,21 @@ class DrawService {
     }));
     const draws = (result.Items || []) as Draw[];
 
+    // Get admin user IDs to exclude from rankings
+    const usersResult = await ddb.send(new ScanCommand({
+      TableName: tables.users,
+      FilterExpression: '#role = :admin',
+      ExpressionAttributeNames: { '#role': 'role' },
+      ExpressionAttributeValues: { ':admin': 'ADMIN' },
+      ProjectionExpression: 'userId',
+    }));
+    const adminIds = new Set((usersResult.Items || []).map((u) => u.userId));
+
     const stats = new Map<string, { userId: string; username: string; wins: number; participations: number; totalWinnings: number }>();
 
     for (const draw of draws) {
       for (const uid of draw.participants) {
+        if (adminIds.has(uid)) continue;
         if (!stats.has(uid)) {
           stats.set(uid, {
             userId: uid,
@@ -576,14 +626,27 @@ class DrawService {
       }
     }
 
-    return Array.from(stats.values())
+    const rankings = Array.from(stats.values())
       .map((s) => ({
         ...s,
+        username: maskUsername(s.username),
         winRate: s.participations > 0 ? Math.round((s.wins / s.participations) * 100) : 0,
       }))
-      .filter((s) => !s.username.startsWith('Demo'))
+      .filter((s) => !s.username.startsWith('Dem'))
       .sort((a, b) => b.wins - a.wins || b.winRate - a.winRate || b.totalWinnings - a.totalWinnings)
       .slice(0, 50);
+
+    // Write to cache
+    try {
+      await ddb.send(new PutCommand({
+        TableName: tables.cache,
+        Item: { pk: 'RANKINGS', sk: mode, data: rankings, computedAt: Date.now() },
+      }));
+    } catch (err) {
+      console.error('[RANKINGS] Cache write failed:', err);
+    }
+
+    return rankings;
   }
 
   // ─── Admin: force finalize (dev tool) ──────────────────────────────────

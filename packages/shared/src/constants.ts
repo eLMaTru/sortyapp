@@ -46,4 +46,5 @@ export const tableNames = (prefix: string) => ({
   templates: `${prefix}-templates`,
   dailyDeposits: `${prefix}-daily-deposits`,
   chatMessages: `${prefix}-chat-messages`,
+  cache: `${prefix}-cache`,
 });
