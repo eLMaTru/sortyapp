@@ -9,6 +9,10 @@ import Navbar from '@/components/Navbar';
 export const metadata: Metadata = {
   title: 'SORTYAPP - Salas & Sorteos',
   description: 'Participa en salas de sorteo con créditos.',
+  icons: {
+    icon: '/favicon.png',
+    apple: '/logo-192.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

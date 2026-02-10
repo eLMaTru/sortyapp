@@ -22,8 +22,9 @@ export default function Navbar() {
         <div className="flex justify-between h-14 md:h-16 items-center">
           {/* Left: Logo + desktop nav links */}
           <div className="flex items-center gap-4 md:gap-6">
-            <Link href="/" className="text-lg md:text-xl font-bold text-white">
-              SORTYAPP
+            <Link href="/" className="flex items-center gap-2 text-lg md:text-xl font-bold text-white">
+              <img src="/logo-192.png" alt="SORTYAPP" className="h-8 w-8 rounded-full" />
+              <span className="hidden sm:inline">SORTYAPP</span>
             </Link>
             {/* Desktop nav links */}
             {user && (

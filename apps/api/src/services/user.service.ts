@@ -41,7 +41,7 @@ class UserService {
       username,
       passwordHash: await bcrypt.hash(password, 10),
       role: 'USER',
-      referralCode: generateReferralCode(),
+      referralCode: generateReferralCode(username),
       referredBy: referrer?.userId,
       firstRealDeposit: false,
       demoBalance: DEMO_INITIAL_CREDITS,

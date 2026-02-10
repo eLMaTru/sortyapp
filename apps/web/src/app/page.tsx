@@ -42,6 +42,7 @@ export default function HomePage() {
   return (
     <div className="text-center py-10 md:py-20 px-2">
       <AmbientConfetti />
+      <img src="/logo-192.png" alt="SORTYAPP" className="w-24 h-24 md:w-32 md:h-32 mx-auto mb-6 rounded-full" />
       <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">{t('home.title')}</h1>
       <p className="text-gray-600 dark:text-gray-400 text-base md:text-lg mb-8 max-w-xl mx-auto">
         {t('home.subtitle')}

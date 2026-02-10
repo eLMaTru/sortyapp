@@ -19,7 +19,7 @@ A **credits-based draw rooms platform** where users join rooms, pay an entry fee
 ### Draw Flow
 1. `OPEN` - Room accepts participants
 2. `FULL` - All slots filled (transitions instantly)
-3. `COUNTDOWN` - 15-second countdown begins
+3. `COUNTDOWN` - 5-second countdown begins
 4. `RUNNING` - Spinner is animating
 5. `COMPLETED` - Winner selected, credits distributed, seeds revealed
 

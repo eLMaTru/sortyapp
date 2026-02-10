@@ -19,6 +19,19 @@ export default function WalletPage() {
   const [loading, setLoading] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [tab, setTab] = useState<'transactions' | 'withdrawals'>('transactions');
+  const [copied, setCopied] = useState(false);
+
+  const referralLink = typeof window !== 'undefined'
+    ? `${window.location.origin}/register?ref=${user?.referralCode || ''}`
+    : '';
+
+  const copyReferralLink = async () => {
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* fallback: do nothing */ }
+  };
 
   useEffect(() => {
     api.wallet.transactions().then(setTransactions).catch(console.error);
@@ -255,8 +268,26 @@ export default function WalletPage() {
       {/* Referral section */}
       <div className="mt-6 bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-4">
         <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">{t('wallet.referralTitle')}</h3>
-        <div className="text-lg font-mono font-bold text-brand-500">{user.referralCode}</div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        <div className="text-lg font-mono font-bold text-brand-500 mb-2">{user.referralCode}</div>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            readOnly
+            value={referralLink}
+            className="flex-1 text-xs font-mono bg-gray-50 dark:bg-surface-dark border border-gray-200 dark:border-surface-dark-3 rounded px-3 py-2 text-gray-600 dark:text-gray-300 truncate"
+          />
+          <button
+            onClick={copyReferralLink}
+            className={`px-3 py-2 rounded text-xs font-medium transition-colors ${
+              copied
+                ? 'bg-green-500 text-white'
+                : 'bg-brand-500 text-white hover:bg-brand-600'
+            }`}
+          >
+            {copied ? t('wallet.copied') : t('wallet.copyLink')}
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
           {t('wallet.referralHint')}
         </p>
       </div>

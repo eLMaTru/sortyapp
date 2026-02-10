@@ -25,7 +25,7 @@ async function seed() {
     username: 'admin',
     passwordHash: await bcrypt.hash('admin1234', 10),
     role: 'ADMIN',
-    referralCode: generateReferralCode(),
+    referralCode: generateReferralCode('admin'),
     firstRealDeposit: false,
     demoBalance: DEMO_INITIAL_CREDITS,
     realBalance: 100000, // Give admin 1000 USDC worth of credits
@@ -44,7 +44,7 @@ async function seed() {
     username: 'testuser',
     passwordHash: await bcrypt.hash('user1234', 10),
     role: 'USER',
-    referralCode: generateReferralCode(),
+    referralCode: generateReferralCode('testuser'),
     firstRealDeposit: true,
     demoBalance: DEMO_INITIAL_CREDITS,
     realBalance: 50000, // 500 USDC

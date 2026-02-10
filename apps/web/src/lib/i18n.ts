@@ -31,7 +31,7 @@ const translations = {
   'home.instantTitle': { es: 'Resultados Instantáneos', en: 'Instant Results' },
   'home.instantDesc': {
     es: 'Las salas se llenan, comienza una cuenta regresiva de 15 segundos, y el resultado se determina automáticamente.',
-    en: 'Rooms fill up, a 15-second countdown begins, and the result is determined automatically.',
+    en: 'Rooms fill up, a 5-second countdown begins, and the result is determined automatically.',
   },
   'home.demoCta': {
     es: 'Empieza en Demo (10,000 créditos gratis)',
@@ -171,9 +171,11 @@ const translations = {
   'wallet.cancelled': { es: 'Retiro cancelado y saldo reembolsado.', en: 'Withdrawal cancelled and balance refunded.' },
   'wallet.referralTitle': { es: 'Tu Código de Referido', en: 'Your Referral Code' },
   'wallet.referralHint': {
-    es: 'Comparte este código. Cuando alguien se registre y haga su primer depósito real, ambos ganan $5 en créditos reales.',
-    en: 'Share this code. When someone signs up and makes their first real deposit, you both earn $5 in real credits.',
+    es: 'Comparte este link. Cuando alguien se registre y haga su primer depósito real, ambos ganan $5 en créditos reales.',
+    en: 'Share this link. When someone signs up and makes their first real deposit, you both earn $5 in real credits.',
   },
+  'wallet.copyLink': { es: 'Copiar', en: 'Copy' },
+  'wallet.copied': { es: 'Copiado!', en: 'Copied!' },
 
   // ───────── Admin ─────────
   'admin.title': { es: 'Panel de Admin', en: 'Admin Panel' },

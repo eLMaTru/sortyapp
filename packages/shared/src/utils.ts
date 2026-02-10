@@ -9,8 +9,9 @@ export function usdcToCredits(usdc: number): number {
   return Math.round(usdc * CREDITS_PER_USDC);
 }
 
-export function generateReferralCode(): string {
-  return randomBytes(4).toString('hex').toUpperCase();
+export function generateReferralCode(username: string): string {
+  const suffix = randomBytes(2).toString('hex').toUpperCase();
+  return `${username}-${suffix}`;
 }
 
 export function generateSeed(): string {
