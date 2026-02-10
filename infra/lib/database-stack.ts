@@ -16,6 +16,7 @@ export interface Tables {
   dailyDeposits: dynamodb.Table;
   chatMessages: dynamodb.Table;
   cache: dynamodb.Table;
+  depositRequests: dynamodb.Table;
 }
 
 export class DatabaseStack extends cdk.Stack {
@@ -132,6 +133,28 @@ export class DatabaseStack extends cdk.Stack {
       timeToLiveAttribute: 'expiresAt',
     });
 
-    this.tables = { users, draws, transactions, withdrawals, templates, dailyDeposits, chatMessages, cache };
+    // Deposit Requests (manual recharge)
+    const depositRequests = new dynamodb.Table(this, 'DepositRequests', {
+      tableName: `${props.prefix}-deposit-requests`,
+      partitionKey: { name: 'depositRequestId', type: dynamodb.AttributeType.STRING },
+      billingMode: billing,
+      removalPolicy,
+    });
+    depositRequests.addGlobalSecondaryIndex({
+      indexName: 'userId-index',
+      partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
+    });
+    depositRequests.addGlobalSecondaryIndex({
+      indexName: 'status-index',
+      partitionKey: { name: 'status', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
+    });
+    depositRequests.addGlobalSecondaryIndex({
+      indexName: 'code-index',
+      partitionKey: { name: 'code', type: dynamodb.AttributeType.STRING },
+    });
+
+    this.tables = { users, draws, transactions, withdrawals, templates, dailyDeposits, chatMessages, cache, depositRequests };
   }
 }

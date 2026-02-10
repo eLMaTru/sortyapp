@@ -103,10 +103,10 @@ export class ApiStack extends cdk.Stack {
 
     grantRW(authFn, [props.tables.users, props.tables.transactions, props.tables.cache]);
     grantRW(drawsFn, [props.tables.draws, props.tables.templates, props.tables.users, props.tables.transactions, props.tables.chatMessages, props.tables.cache]);
-    grantRW(walletFn, [props.tables.users, props.tables.transactions, props.tables.withdrawals, props.tables.dailyDeposits]);
+    grantRW(walletFn, [props.tables.users, props.tables.transactions, props.tables.withdrawals, props.tables.dailyDeposits, props.tables.depositRequests]);
     grantRW(adminFn, Object.values(props.tables) as dynamodb.Table[]);
     grantRW(webhooksFn, [props.tables.users, props.tables.transactions]);
-    grantRW(sweeperFn, [props.tables.draws, props.tables.templates, props.tables.users, props.tables.transactions, props.tables.cache, props.tables.withdrawals]);
+    grantRW(sweeperFn, [props.tables.draws, props.tables.templates, props.tables.users, props.tables.transactions, props.tables.cache, props.tables.withdrawals, props.tables.depositRequests]);
 
     // ─── SQS permissions ──────────────────────────────────────────────────────
     props.queues.emailQueue.grantSendMessages(drawsFn);

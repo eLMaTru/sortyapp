@@ -177,6 +177,45 @@ const translations = {
   'wallet.copyLink': { es: 'Copiar', en: 'Copy' },
   'wallet.copied': { es: 'Copiado!', en: 'Copied!' },
 
+  // ───────── Deposit (Recharge) ─────────
+  'deposit.title': { es: 'Recargar Créditos', en: 'Recharge Credits' },
+  'deposit.subtitle': {
+    es: 'Selecciona un método de pago, envía el monto y reporta tu pago. Un admin lo verificará.',
+    en: 'Select a payment method, send the amount, and report your payment. An admin will verify it.',
+  },
+  'deposit.selectMethod': { es: 'Seleccionar Método', en: 'Select Method' },
+  'deposit.amount': { es: 'Monto (USD)', en: 'Amount (USD)' },
+  'deposit.min': { es: 'Mínimo $5', en: 'Min $5' },
+  'deposit.max': { es: 'Máximo $100', en: 'Max $100' },
+  'deposit.dailyLimit': { es: 'Límite diario: $300', en: 'Daily limit: $300' },
+  'deposit.instructions': { es: 'Instrucciones', en: 'Instructions' },
+  'deposit.code': { es: 'Tu Código de Depósito', en: 'Your Deposit Code' },
+  'deposit.codeHint': {
+    es: 'Incluye este código en el memo/nota de tu pago para que podamos identificarlo.',
+    en: 'Include this code in the memo/note of your payment so we can identify it.',
+  },
+  'deposit.reference': { es: 'Referencia de Pago (opcional)', en: 'Payment Reference (optional)' },
+  'deposit.referenceHint': {
+    es: 'Número de transacción, confirmación o captura de pantalla',
+    en: 'Transaction number, confirmation or screenshot',
+  },
+  'deposit.submit': { es: 'Reportar Pago', en: 'Report Payment' },
+  'deposit.submitting': { es: 'Enviando...', en: 'Submitting...' },
+  'deposit.success': {
+    es: 'Solicitud de depósito enviada. Te notificaremos cuando sea aprobada.',
+    en: 'Deposit request submitted. We will notify you when it is approved.',
+  },
+  'deposit.creditsPreview': { es: 'Recibirás', en: 'You will receive' },
+  'deposit.myRequests': { es: 'Mis Solicitudes', en: 'My Requests' },
+  'deposit.noRequests': { es: 'Sin solicitudes aún.', en: 'No requests yet.' },
+  'deposit.status.PENDING': { es: 'Pendiente', en: 'Pending' },
+  'deposit.status.APPROVED': { es: 'Aprobado', en: 'Approved' },
+  'deposit.status.REJECTED': { es: 'Rechazado', en: 'Rejected' },
+  'deposit.status.EXPIRED': { es: 'Expirado', en: 'Expired' },
+  'deposit.back': { es: 'Volver', en: 'Back' },
+  'deposit.newRequest': { es: 'Nueva Recarga', en: 'New Recharge' },
+  'deposit.loginRequired': { es: 'Inicia sesión para recargar créditos.', en: 'Log in to recharge credits.' },
+
   // ───────── Admin ─────────
   'admin.title': { es: 'Panel de Admin', en: 'Admin Panel' },
   'admin.users': { es: 'Usuarios', en: 'Users' },
@@ -207,6 +246,12 @@ const translations = {
   'admin.templateCreated': { es: 'Plantilla creada', en: 'Template created' },
   'admin.templateUpdated': { es: 'Plantilla actualizada', en: 'Template updated' },
   'admin.drawFinalized': { es: 'Sorteo finalizado', en: 'Draw finalized' },
+  'admin.deposits': { es: 'Depósitos', en: 'Deposits' },
+  'admin.noDeposits': { es: 'Sin depósitos pendientes.', en: 'No pending deposits.' },
+  'admin.depositApproved': { es: 'Depósito aprobado', en: 'Deposit approved' },
+  'admin.depositRejected': { es: 'Depósito rechazado', en: 'Deposit rejected' },
+  'admin.reject': { es: 'Rechazar', en: 'Reject' },
+  'admin.adminNote': { es: 'Nota (opcional)', en: 'Note (optional)' },
 
   // ───────── Chat ─────────
   'chat.title': { es: 'Chat', en: 'Chat' },

@@ -8,9 +8,11 @@ import { api } from '@/lib/api';
 export default function AdminPage() {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const [tab, setTab] = useState<'metrics' | 'users' | 'withdrawals' | 'templates' | 'draws'>('metrics');
+  const [tab, setTab] = useState<'metrics' | 'users' | 'deposits' | 'withdrawals' | 'templates' | 'draws'>('metrics');
   const [users, setUsers] = useState<any[]>([]);
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
+  const [depositRequests, setDepositRequests] = useState<any[]>([]);
+  const [reviewNote, setReviewNote] = useState('');
   const [templates, setTemplates] = useState<any[]>([]);
   const [draws, setDraws] = useState<any[]>([]);
   const [metrics, setMetrics] = useState<any>(null);
@@ -40,18 +42,20 @@ export default function AdminPage() {
 
   const loadData = async () => {
     try {
-      const [u, w, tpl, d, m] = await Promise.all([
+      const [u, w, tpl, d, m, dr] = await Promise.all([
         api.admin.users(),
         api.admin.pendingWithdrawals(),
         api.admin.templates(),
         api.admin.draws(drawMode),
         api.admin.metrics(),
+        api.admin.pendingDepositRequests(),
       ]);
       setUsers(u);
       setWithdrawals(w);
       setTemplates(tpl.sort((a: any, b: any) => (a.slots - b.slots) || ((a.entryCredits || a.entryDollars * 100) - (b.entryCredits || b.entryDollars * 100))));
       setDraws(d);
       setMetrics(m);
+      setDepositRequests(dr);
     } catch (e: any) {
       setErr(e.message);
     }
@@ -120,6 +124,16 @@ export default function AdminPage() {
     } catch (e: any) { setErr(e.message); }
   };
 
+  const handleReviewDeposit = async (depositRequestId: string, action: 'APPROVE' | 'REJECT') => {
+    setMsg(''); setErr('');
+    try {
+      await api.admin.reviewDepositRequest({ depositRequestId, action, adminNote: reviewNote || undefined });
+      setMsg(action === 'APPROVE' ? t('admin.depositApproved') : t('admin.depositRejected'));
+      setReviewNote('');
+      await loadData();
+    } catch (e: any) { setErr(e.message); }
+  };
+
   const handleForceFinalize = async (drawId: string) => {
     setMsg(''); setErr('');
     try {
@@ -129,10 +143,11 @@ export default function AdminPage() {
     } catch (e: any) { setErr(e.message); }
   };
 
-  const tabKeys = ['metrics', 'users', 'withdrawals', 'templates', 'draws'] as const;
+  const tabKeys = ['metrics', 'users', 'deposits', 'withdrawals', 'templates', 'draws'] as const;
   const tabLabels: Record<string, string> = {
     metrics: t('admin.metrics'),
     users: t('admin.users'),
+    deposits: `${t('admin.deposits')}${depositRequests.length > 0 ? ` (${depositRequests.length})` : ''}`,
     withdrawals: t('admin.withdrawals'),
     templates: t('admin.templates'),
     draws: t('admin.draws'),
@@ -229,6 +244,62 @@ export default function AdminPage() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Deposits tab */}
+      {tab === 'deposits' && (
+        <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 divide-y divide-gray-200 dark:divide-surface-dark-3">
+          {depositRequests.length === 0 ? (
+            <p className="p-4 text-sm text-gray-500 dark:text-gray-400">{t('admin.noDeposits')}</p>
+          ) : (
+            depositRequests.map((d) => (
+              <div key={d.depositRequestId} className="px-4 py-3">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      ${d.amountUSDC} USD ({d.amountCredits.toLocaleString()} SC)
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {d.username} &middot; {d.method} &middot; Code: <span className="font-mono font-bold">{d.code}</span>
+                    </div>
+                    {d.reference && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        Ref: {d.reference}
+                      </div>
+                    )}
+                    <div className="text-xs text-gray-400 mt-0.5">
+                      {new Date(d.createdAt).toLocaleString()} &middot; Expires: {new Date(d.expiresAt).toLocaleString()}
+                    </div>
+                  </div>
+                  <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full">
+                    PENDING
+                  </span>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    placeholder={t('admin.adminNote')}
+                    value={reviewNote}
+                    onChange={(e) => setReviewNote(e.target.value)}
+                    className="flex-1 border border-gray-300 dark:border-surface-dark-3 dark:bg-surface-dark rounded px-2 py-1 text-xs dark:text-white"
+                  />
+                  <button
+                    onClick={() => handleReviewDeposit(d.depositRequestId, 'APPROVE')}
+                    className="bg-brand-500 text-white px-3 py-1 rounded text-xs hover:bg-brand-600"
+                  >
+                    {t('admin.approve')}
+                  </button>
+                  <button
+                    onClick={() => handleReviewDeposit(d.depositRequestId, 'REJECT')}
+                    className="bg-red-500 text-white px-3 py-1 rounded text-xs hover:bg-red-600"
+                  >
+                    {t('admin.reject')}
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
 

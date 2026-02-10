@@ -90,9 +90,7 @@ class WalletService {
       throw new AppError(400, `Minimum deposit is ${config.minDepositCredits} credits`);
     }
 
-    // Check daily limit
-    await this.checkDailyDepositLimit(userId, amountCredits);
-
+    // No daily limit for admin simulate — limits apply to real Transak deposits only
     const newBalance = await this.creditBalance(userId, 'REAL', amountCredits);
 
     const tx = await this.recordTransaction({
@@ -103,9 +101,6 @@ class WalletService {
       balanceAfter: newBalance,
       description: `Simulated deposit of ${creditsToUSDC(amountCredits)} USDC`,
     });
-
-    // Track daily deposit
-    await this.trackDailyDeposit(userId, amountCredits);
 
     // Handle first deposit referral bonus
     await this.handleFirstDeposit(userId);

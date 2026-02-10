@@ -22,6 +22,34 @@ export const CHAT_COOLDOWN_SECONDS = 5;
 export const CHAT_MAX_LENGTH = 140;
 export const CHAT_TTL_AFTER_COMPLETED_MINUTES = 5;
 
+// Manual deposit limits
+export const MIN_DEPOSIT_USDC = 5;
+export const MAX_DEPOSIT_USDC = 100;
+export const MAX_DAILY_DEPOSIT_USDC = 300;
+export const DEPOSIT_EXPIRY_HOURS = 48;
+
+// Deposit method info (dummy data for now)
+export const DEPOSIT_METHODS = [
+  {
+    method: 'BINANCE' as const,
+    label: 'Binance (USDC/USDT)',
+    instructions: 'Send USDC or USDT to the following Binance Pay ID: 123456789. Include the deposit code in the memo.',
+    fields: ['Transaction ID'],
+  },
+  {
+    method: 'ZELLE' as const,
+    label: 'Zelle (USA)',
+    instructions: 'Send payment via Zelle to: payments@sortyapp.com. Include the deposit code in the note.',
+    fields: ['Confirmation number'],
+  },
+  {
+    method: 'BANK_RD' as const,
+    label: 'Transferencia Bancaria (RD)',
+    instructions: 'Transferir a Banco Popular, Cuenta: 123-456789-0, a nombre de SORTYAPP SRL. Incluir el código de depósito en la descripción.',
+    fields: ['Número de referencia'],
+  },
+] as const;
+
 // Referral
 export const REFERRAL_BONUS_CREDITS = 500; // $5
 
@@ -47,4 +75,5 @@ export const tableNames = (prefix: string) => ({
   dailyDeposits: `${prefix}-daily-deposits`,
   chatMessages: `${prefix}-chat-messages`,
   cache: `${prefix}-cache`,
+  depositRequests: `${prefix}-deposit-requests`,
 });

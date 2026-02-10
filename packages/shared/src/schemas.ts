@@ -67,6 +67,19 @@ export const SendChatMessageSchema = z.object({
   content: z.string().min(1).max(140),
 });
 
+// ─── Deposit Requests (Manual Recharge) ─────────────────────────────────────
+export const CreateDepositRequestSchema = z.object({
+  method: z.enum(['BINANCE', 'ZELLE', 'BANK_RD']),
+  amountUSDC: z.number().min(5).max(100),
+  reference: z.string().max(200).optional(),
+});
+
+export const ReviewDepositRequestSchema = z.object({
+  depositRequestId: z.string().uuid(),
+  action: z.enum(['APPROVE', 'REJECT']),
+  adminNote: z.string().max(500).optional(),
+});
+
 // ─── Query params ────────────────────────────────────────────────────────────
 export const ListDrawsQuerySchema = z.object({
   mode: z.enum(['DEMO', 'REAL']),

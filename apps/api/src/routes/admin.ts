@@ -4,9 +4,11 @@ import {
   ApproveWithdrawalSchema,
   CreateTemplateSchema,
   UpdateTemplateSchema,
+  ReviewDepositRequestSchema,
 } from '@sortyapp/shared';
 import { authenticate, requireRole, AuthRequest } from '../middleware/auth.middleware';
 import { walletService } from '../services/wallet.service';
+import { depositService } from '../services/deposit.service';
 import { drawService } from '../services/draw.service';
 import { userService } from '../services/user.service';
 import { metricsService } from '../services/metrics.service';
@@ -46,6 +48,27 @@ router.post('/withdrawals/approve', async (req, res, next) => {
     const body = ApproveWithdrawalSchema.parse(req.body);
     const withdrawal = await walletService.approveWithdrawal(body.withdrawalId, body.txHash);
     res.json({ success: true, data: withdrawal });
+  } catch (err) { next(err); }
+});
+
+// ─── Deposit requests (manual recharge) ─────────────────────────────────────
+router.get('/deposit-requests', async (_req, res, next) => {
+  try {
+    const deposits = await depositService.listPending();
+    res.json({ success: true, data: deposits });
+  } catch (err) { next(err); }
+});
+
+router.post('/deposit-requests/review', async (req: AuthRequest, res, next) => {
+  try {
+    const body = ReviewDepositRequestSchema.parse(req.body);
+    let deposit;
+    if (body.action === 'APPROVE') {
+      deposit = await depositService.approve(body.depositRequestId, req.user!.userId, body.adminNote);
+    } else {
+      deposit = await depositService.reject(body.depositRequestId, req.user!.userId, body.adminNote);
+    }
+    res.json({ success: true, data: deposit });
   } catch (err) { next(err); }
 });
 

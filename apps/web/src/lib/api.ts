@@ -57,6 +57,10 @@ export const api = {
     withdrawals: () => request<any[]>('/wallet/withdrawals'),
     cancelWithdrawal: (withdrawalId: string) =>
       request<any>(`/wallet/withdrawals/${withdrawalId}/cancel`, { method: 'POST' }),
+    depositMethods: () => request<any[]>('/wallet/deposit-methods'),
+    createDepositRequest: (data: { method: string; amountUSDC: number; reference?: string }) =>
+      request<any>('/wallet/deposit-request', { method: 'POST', body: JSON.stringify(data) }),
+    depositRequests: () => request<any[]>('/wallet/deposit-requests'),
   },
 
   admin: {
@@ -76,5 +80,8 @@ export const api = {
       request<any>(`/admin/draws/${drawId}/force-finalize`, { method: 'POST' }),
     ensureOpenDraws: () => request<any>('/admin/ensure-open-draws', { method: 'POST' }),
     metrics: () => request<any>('/admin/metrics'),
+    pendingDepositRequests: () => request<any[]>('/admin/deposit-requests'),
+    reviewDepositRequest: (data: { depositRequestId: string; action: 'APPROVE' | 'REJECT'; adminNote?: string }) =>
+      request<any>('/admin/deposit-requests/review', { method: 'POST', body: JSON.stringify(data) }),
   },
 };

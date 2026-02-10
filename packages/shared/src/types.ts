@@ -176,6 +176,35 @@ export interface AdminMetrics {
   recentUsers: number; // last 24h
 }
 
+// ─── Deposit Requests (Manual Recharge) ─────────────────────────────────────
+export type DepositMethod = 'BINANCE' | 'ZELLE' | 'BANK_RD';
+export type DepositRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
+
+export interface DepositMethodInfo {
+  method: DepositMethod;
+  label: string;
+  instructions: string;
+  fields: string[]; // what user should provide as reference
+}
+
+export interface DepositRequest {
+  depositRequestId: string;
+  userId: string;
+  username: string;
+  method: DepositMethod;
+  amountUSDC: number;
+  amountCredits: number;
+  code: string;           // unique code e.g. DEP-A3F2 for payment memo
+  reference?: string;     // user-provided: tx hash, confirmation #, etc.
+  status: DepositRequestStatus;
+  adminNote?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  expiresAt: string;
+}
+
 // ─── API Response Envelope ───────────────────────────────────────────────────
 export interface ApiResponse<T = unknown> {
   success: boolean;

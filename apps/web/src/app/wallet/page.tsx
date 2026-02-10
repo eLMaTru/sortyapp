@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMode } from '@/contexts/ModeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -115,6 +116,14 @@ export default function WalletPage() {
         </div>
         <div className="text-3xl font-bold text-gray-900 dark:text-white">{balance.toLocaleString()} SC</div>
         <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">&asymp; ${(balance / 100).toFixed(2)} USDC</div>
+        {!isDemoMode && (
+          <Link
+            href="/deposit"
+            className="inline-block mt-3 bg-brand-500 text-white px-4 py-2 rounded text-sm font-medium hover:bg-brand-600"
+          >
+            {t('deposit.title')}
+          </Link>
+        )}
       </div>
 
       {/* Withdrawal Form (Real mode only) */}

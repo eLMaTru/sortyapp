@@ -2,6 +2,7 @@ import { QueryCommand, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, tables } from '../lib/dynamo';
 import { drawService } from '../services/draw.service';
 import { metricsService } from '../services/metrics.service';
+import { depositService } from '../services/deposit.service';
 
 /**
  * EventBridge sweeper: runs every 5 minutes.
@@ -13,6 +14,7 @@ import { metricsService } from '../services/metrics.service';
  */
 export const handler = async (): Promise<void> => {
   await finalizeStuckDraws();
+  await expireDepositRequests();
   await recomputeCachedData();
 };
 
@@ -56,6 +58,18 @@ async function finalizeStuckDraws(): Promise<void> {
         console.error(`[SWEEPER] Failed to finalize ${draw.drawId}:`, err);
       }
     }
+  }
+}
+
+// ─── Expire stale deposit requests (>48h) ────────────────────────────────
+async function expireDepositRequests(): Promise<void> {
+  try {
+    const expired = await depositService.expirePending();
+    if (expired > 0) {
+      console.log(`[SWEEPER] Expired ${expired} deposit request(s)`);
+    }
+  } catch (err) {
+    console.error('[SWEEPER] Deposit expiry failed:', err);
   }
 }
 
