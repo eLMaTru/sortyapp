@@ -654,6 +654,109 @@ class DrawService {
     return rankings;
   }
 
+  // ─── Expire stale OPEN draws ─────────────────────────────────────────
+  async expireStaleDraws(): Promise<number> {
+    const now = new Date();
+    const REAL_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24h for REAL
+    const DEMO_MAX_AGE_MS = 1 * 60 * 60 * 1000;  // 1h for DEMO
+
+    // Query OPEN draws for both modes
+    const [demoResult, realResult] = await Promise.all([
+      ddb.send(new QueryCommand({
+        TableName: tables.draws,
+        IndexName: 'modeStatus-index',
+        KeyConditionExpression: '#mode = :mode AND #status = :status',
+        ExpressionAttributeNames: { '#mode': 'mode', '#status': 'status' },
+        ExpressionAttributeValues: { ':mode': 'DEMO', ':status': 'OPEN' },
+      })),
+      ddb.send(new QueryCommand({
+        TableName: tables.draws,
+        IndexName: 'modeStatus-index',
+        KeyConditionExpression: '#mode = :mode AND #status = :status',
+        ExpressionAttributeNames: { '#mode': 'mode', '#status': 'status' },
+        ExpressionAttributeValues: { ':mode': 'REAL', ':status': 'OPEN' },
+      })),
+    ]);
+
+    const allOpen = [...(demoResult.Items || []), ...(realResult.Items || [])] as Draw[];
+    let expired = 0;
+
+    for (const draw of allOpen) {
+      // Only expire draws that have at least 1 participant (empty draws are just waiting rooms)
+      if (draw.filledSlots === 0) continue;
+
+      const maxAge = draw.mode === 'REAL' ? REAL_MAX_AGE_MS : DEMO_MAX_AGE_MS;
+      const age = now.getTime() - new Date(draw.createdAt).getTime();
+      if (age < maxAge) continue;
+
+      // Mark as EXPIRED (idempotent)
+      try {
+        await ddb.send(new UpdateCommand({
+          TableName: tables.draws,
+          Key: { drawId: draw.drawId },
+          UpdateExpression: 'SET #status = :expired, updatedAt = :now',
+          ConditionExpression: '#status = :open',
+          ExpressionAttributeNames: { '#status': 'status' },
+          ExpressionAttributeValues: {
+            ':expired': 'EXPIRED',
+            ':open': 'OPEN',
+            ':now': now.toISOString(),
+          },
+        }));
+      } catch (err: any) {
+        if (err.name === 'ConditionalCheckFailedException') continue;
+        console.error(`[EXPIRE] Failed to expire draw ${draw.drawId}:`, err);
+        continue;
+      }
+
+      // Refund all participants
+      for (const pid of draw.participants) {
+        try {
+          const bal = await walletService.creditBalance(pid, draw.mode, draw.entryCredits);
+          await walletService.recordTransaction({
+            userId: pid,
+            walletMode: draw.mode,
+            type: 'DRAW_REFUND',
+            amount: draw.entryCredits,
+            balanceAfter: bal,
+            referenceId: draw.drawId,
+            description: `Room expired (not enough players) - refund ${draw.drawId.slice(0, 8)}`,
+          });
+
+          // Store notification for non-bot users
+          if (!draw.participantUsernames[pid]?.startsWith('Demo')) {
+            const ttl = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60; // 7 day TTL
+            await ddb.send(new PutCommand({
+              TableName: tables.cache,
+              Item: {
+                pk: `NOTIFICATION#${pid}`,
+                sk: `EXPIRED_DRAW#${draw.drawId}`,
+                drawId: draw.drawId,
+                mode: draw.mode,
+                entryCredits: draw.entryCredits,
+                createdAt: now.toISOString(),
+                expiresAt: ttl,
+              },
+            }));
+          }
+        } catch (refundErr) {
+          console.error(`[EXPIRE] Refund failed for ${pid} in draw ${draw.drawId}:`, refundErr);
+        }
+      }
+
+      // Create a new OPEN draw for this template
+      const template = await this.getTemplate(draw.templateId);
+      if (template?.enabled) {
+        await this.createDrawForTemplate(template, draw.mode);
+      }
+
+      expired++;
+      console.log(`[EXPIRE] Draw ${draw.drawId} expired (${draw.mode}, ${draw.filledSlots}/${draw.totalSlots} slots, age: ${Math.round(age / 60000)}min). Refunded ${draw.participants.length} participants.`);
+    }
+
+    return expired;
+  }
+
   // ─── Admin: force finalize (dev tool) ──────────────────────────────────
   async forceFinalize(drawId: string): Promise<Draw> {
     const draw = await this.getDrawRaw(drawId);

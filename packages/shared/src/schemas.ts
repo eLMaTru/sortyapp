@@ -69,9 +69,10 @@ export const SendChatMessageSchema = z.object({
 
 // ─── Deposit Requests (Manual Recharge) ─────────────────────────────────────
 export const CreateDepositRequestSchema = z.object({
-  method: z.enum(['BINANCE', 'ZELLE', 'BANK_RD']),
+  method: z.enum(['BINANCE', 'PAYPAL', 'BANK_POPULAR', 'BANK_BHD']),
   amountUSDC: z.number().min(5).max(100),
   reference: z.string().max(200).optional(),
+  code: z.string().max(20).optional(),
 });
 
 export const ReviewDepositRequestSchema = z.object({

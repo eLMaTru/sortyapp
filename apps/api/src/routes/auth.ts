@@ -1,8 +1,10 @@
 import { Router } from 'express';
+import { QueryCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { RegisterSchema, LoginSchema, UpdateWalletAddressSchema } from '@sortyapp/shared';
 import { userService } from '../services/user.service';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import { rateLimit } from '../middleware/rate-limit.middleware';
+import { ddb, tables } from '../lib/dynamo';
 
 const router = Router();
 
@@ -34,6 +36,36 @@ router.put('/wallet-address', authenticate, async (req: AuthRequest, res, next) 
     const body = UpdateWalletAddressSchema.parse(req.body);
     await userService.updateWalletAddress(req.user!.userId, body.walletAddress);
     res.json({ success: true, message: 'Wallet address updated' });
+  } catch (err) { next(err); }
+});
+
+// ─── Notifications (expired draws, etc.) ─────────────────────────────────
+router.get('/notifications', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const result = await ddb.send(new QueryCommand({
+      TableName: tables.cache,
+      KeyConditionExpression: 'pk = :pk',
+      ExpressionAttributeValues: { ':pk': `NOTIFICATION#${req.user!.userId}` },
+    }));
+    res.json({ success: true, data: result.Items || [] });
+  } catch (err) { next(err); }
+});
+
+router.post('/notifications/dismiss', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const result = await ddb.send(new QueryCommand({
+      TableName: tables.cache,
+      KeyConditionExpression: 'pk = :pk',
+      ExpressionAttributeValues: { ':pk': `NOTIFICATION#${req.user!.userId}` },
+    }));
+    // Delete all notifications for this user
+    for (const item of result.Items || []) {
+      await ddb.send(new DeleteCommand({
+        TableName: tables.cache,
+        Key: { pk: item.pk, sk: item.sk },
+      }));
+    }
+    res.json({ success: true, message: 'Notifications dismissed' });
   } catch (err) { next(err); }
 });
 

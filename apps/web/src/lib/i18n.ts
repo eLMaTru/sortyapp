@@ -37,6 +37,13 @@ const translations = {
     es: 'Empieza en Demo (10,000 créditos gratis)',
     en: 'Start in Demo (10,000 free credits)',
   },
+  'home.community': { es: 'Comunidad', en: 'Community' },
+  'home.communityDesc': {
+    es: 'Únete a nuestros grupos para enterarte de novedades y conectar con otros jugadores.',
+    en: 'Join our groups to stay updated and connect with other players.',
+  },
+  'home.telegram': { es: 'Telegram', en: 'Telegram' },
+  'home.whatsapp': { es: 'WhatsApp', en: 'WhatsApp' },
 
   // ───────── Login ─────────
   'login.title': { es: 'Iniciar Sesión', en: 'Log in' },
@@ -220,6 +227,31 @@ const translations = {
   'deposit.back': { es: 'Volver', en: 'Back' },
   'deposit.newRequest': { es: 'Nueva Recarga', en: 'New Recharge' },
   'deposit.loginRequired': { es: 'Inicia sesión para recargar créditos.', en: 'Log in to recharge credits.' },
+  'deposit.binanceScan': { es: 'Escanea el QR o usa el Pay ID', en: 'Scan the QR or use the Pay ID' },
+  'deposit.binanceUser': { es: 'Usuario Binance', en: 'Binance User' },
+  'deposit.bankDetails': { es: 'Datos de la Cuenta', en: 'Account Details' },
+  'deposit.bankName': { es: 'Banco', en: 'Bank' },
+  'deposit.accountNumber': { es: 'Número de Cuenta', en: 'Account Number' },
+  'deposit.accountType': { es: 'Tipo de Cuenta', en: 'Account Type' },
+  'deposit.dopRate': { es: 'Tasa DOP/USD', en: 'DOP/USD Rate' },
+  'deposit.dopToSend': { es: 'Debes transferir', en: 'You must transfer' },
+  'deposit.step2Hint': {
+    es: 'Ingresa el monto en USD que deseas depositar. En el siguiente paso verás las instrucciones de pago.',
+    en: 'Enter the USD amount you want to deposit. You will see payment instructions in the next step.',
+  },
+  'deposit.next': { es: 'Continuar', en: 'Continue' },
+  'deposit.memoWarning': {
+    es: 'IMPORTANTE: Incluye el código de arriba en el memo/nota/descripción de tu pago. Sin este código no podremos acreditar tu depósito.',
+    en: 'IMPORTANT: Include the code above in the memo/note/description of your payment. Without this code we cannot credit your deposit.',
+  },
+  'deposit.binanceMemo': { es: 'Poner en el Memo', en: 'Put in Memo' },
+  'deposit.paypalEmail': { es: 'Correo PayPal', en: 'PayPal Email' },
+  'deposit.paypalMemo': { es: 'Poner en la Nota', en: 'Put in Note' },
+  'deposit.bankMemo': { es: 'Poner en Descripción', en: 'Put in Description' },
+  'deposit.successHint': {
+    es: 'Tu solicitud fue registrada. Una vez realices el pago con el código en el memo, un admin lo verificará y acreditará tus créditos.',
+    en: 'Your request has been registered. Once you make the payment with the code in the memo, an admin will verify it and credit your account.',
+  },
 
   // ───────── Admin ─────────
   'admin.title': { es: 'Panel de Admin', en: 'Admin Panel' },
@@ -251,6 +283,14 @@ const translations = {
   'admin.templateCreated': { es: 'Plantilla creada', en: 'Template created' },
   'admin.templateUpdated': { es: 'Plantilla actualizada', en: 'Template updated' },
   'admin.drawFinalized': { es: 'Sorteo finalizado', en: 'Draw finalized' },
+  'admin.dopRateTitle': { es: 'Tasa de Cambio DOP/USD', en: 'DOP/USD Exchange Rate' },
+  'admin.dopRateHint': {
+    es: 'Esta tasa se usa para calcular cuántos pesos dominicanos (RD$) debe transferir el usuario para depósitos via bancos RD.',
+    en: 'This rate is used to calculate how many Dominican pesos (RD$) the user must transfer for RD bank deposits.',
+  },
+  'admin.saveDopRate': { es: 'Guardar Tasa', en: 'Save Rate' },
+  'admin.saved': { es: 'Guardado', en: 'Saved' },
+  'admin.dopRateSaved': { es: 'Tasa DOP/USD actualizada', en: 'DOP/USD rate updated' },
   'admin.deposits': { es: 'Depósitos', en: 'Deposits' },
   'admin.noDeposits': { es: 'Sin depósitos pendientes.', en: 'No pending deposits.' },
   'admin.depositApproved': { es: 'Depósito aprobado', en: 'Deposit approved' },
@@ -316,6 +356,22 @@ const translations = {
     es: 'Toca el botón Compartir y luego "Agregar a pantalla de inicio" para instalar.',
     en: 'Tap the Share button and then "Add to Home Screen" to install.',
   },
+
+  // ───────── Expired Draw Notification ─────────
+  'expired.title': { es: 'Sala Expirada', en: 'Room Expired' },
+  'expired.messageSingle': {
+    es: 'Una sala en la que participabas expiró por falta de jugadores.',
+    en: 'A room you joined expired due to not enough players.',
+  },
+  'expired.messageMultiple': {
+    es: '${count} salas en las que participabas expiraron por falta de jugadores.',
+    en: '${count} rooms you joined expired due to not enough players.',
+  },
+  'expired.refunded': {
+    es: 'Tus créditos fueron devueltos a tu balance.',
+    en: 'Your credits have been refunded to your balance.',
+  },
+  'expired.ok': { es: 'Entendido', en: 'Got it' },
 
   // ───────── Common ─────────
   'common.demo': { es: 'Demo', en: 'Demo' },

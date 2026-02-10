@@ -55,7 +55,7 @@ export interface Transaction {
 }
 
 // ─── Draws ───────────────────────────────────────────────────────────────────
-export type DrawStatus = 'OPEN' | 'FULL' | 'COUNTDOWN' | 'RUNNING' | 'COMPLETED';
+export type DrawStatus = 'OPEN' | 'FULL' | 'COUNTDOWN' | 'RUNNING' | 'COMPLETED' | 'EXPIRED';
 
 export interface Draw {
   drawId: string;
@@ -177,7 +177,7 @@ export interface AdminMetrics {
 }
 
 // ─── Deposit Requests (Manual Recharge) ─────────────────────────────────────
-export type DepositMethod = 'BINANCE' | 'ZELLE' | 'BANK_RD';
+export type DepositMethod = 'BINANCE' | 'PAYPAL' | 'BANK_POPULAR' | 'BANK_BHD';
 export type DepositRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
 
 export interface DepositMethodInfo {
@@ -185,6 +185,7 @@ export interface DepositMethodInfo {
   label: string;
   instructions: string;
   fields: string[]; // what user should provide as reference
+  currency?: 'USD' | 'DOP'; // DOP = Dominican Peso, needs exchange rate
 }
 
 export interface DepositRequest {

@@ -1,9 +1,11 @@
 import { Router } from 'express';
+import { GetCommand } from '@aws-sdk/lib-dynamodb';
 import { WithdrawalRequestSchema, CreateDepositRequestSchema, DEPOSIT_METHODS } from '@sortyapp/shared';
 import { walletService } from '../services/wallet.service';
 import { depositService } from '../services/deposit.service';
 import { userService } from '../services/user.service';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
+import { ddb, tables } from '../lib/dynamo';
 
 const router = Router();
 
@@ -43,7 +45,16 @@ router.get('/withdrawals', authenticate, async (req: AuthRequest, res, next) => 
 // ─── Deposit requests (manual recharge) ─────────────────────────────────────
 router.get('/deposit-methods', authenticate, async (_req: AuthRequest, res, next) => {
   try {
-    res.json({ success: true, data: DEPOSIT_METHODS });
+    // Fetch DOP rate from cache table
+    let dopRate = 0;
+    try {
+      const result = await ddb.send(new GetCommand({
+        TableName: tables.cache,
+        Key: { pk: 'CONFIG', sk: 'DOP_RATE' },
+      }));
+      dopRate = result.Item?.rate ?? 0;
+    } catch { /* rate stays 0 */ }
+    res.json({ success: true, data: { methods: DEPOSIT_METHODS, dopRate } });
   } catch (err) { next(err); }
 });
 
@@ -58,6 +69,7 @@ router.post('/deposit-request', authenticate, async (req: AuthRequest, res, next
       body.method,
       body.amountUSDC,
       body.reference,
+      body.code,
     );
     res.status(201).json({ success: true, data: deposit });
   } catch (err) { next(err); }

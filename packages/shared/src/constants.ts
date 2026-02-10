@@ -28,25 +28,44 @@ export const MAX_DEPOSIT_USDC = 100;
 export const MAX_DAILY_DEPOSIT_USDC = 300;
 export const DEPOSIT_EXPIRY_HOURS = 48;
 
-// Deposit method info (dummy data for now)
+// Deposit method info
 export const DEPOSIT_METHODS = [
   {
     method: 'BINANCE' as const,
-    label: 'Binance (USDC/USDT)',
-    instructions: 'Send USDC or USDT to the following Binance Pay ID: 123456789. Include the deposit code in the memo.',
+    label: 'Binance Pay (USDC/USDT)',
+    instructions: 'Envía USDC o USDT al siguiente Binance Pay ID. Incluye tu código de depósito en el memo/nota del pago.',
     fields: ['Transaction ID'],
+    currency: 'USD' as const,
+    binancePayId: '15121965',
+    binanceUser: 'sortyapp-72e82',
   },
   {
-    method: 'ZELLE' as const,
-    label: 'Zelle (USA)',
-    instructions: 'Send payment via Zelle to: payments@sortyapp.com. Include the deposit code in the note.',
-    fields: ['Confirmation number'],
+    method: 'PAYPAL' as const,
+    label: 'PayPal',
+    instructions: 'Envía el pago a la cuenta de PayPal. Incluye tu código de depósito en la nota del pago.',
+    fields: ['Transaction ID'],
+    currency: 'USD' as const,
+    paypalEmail: 'elmatru@hotmail.es',
   },
   {
-    method: 'BANK_RD' as const,
-    label: 'Transferencia Bancaria (RD)',
-    instructions: 'Transferir a Banco Popular, Cuenta: 123-456789-0, a nombre de SORTYAPP SRL. Incluir el código de depósito en la descripción.',
+    method: 'BANK_POPULAR' as const,
+    label: 'Banco Popular (RD)',
+    instructions: 'Transferir a la cuenta de ahorro del Banco Popular. Incluir el código de depósito en la descripción.',
     fields: ['Número de referencia'],
+    currency: 'DOP' as const,
+    accountNumber: '804042893',
+    accountType: 'Cuenta de Ahorro',
+    bankName: 'Banco Popular Dominicano',
+  },
+  {
+    method: 'BANK_BHD' as const,
+    label: 'Banco BHD (RD)',
+    instructions: 'Transferir a la cuenta de ahorro del Banco BHD. Incluir el código de depósito en la descripción.',
+    fields: ['Número de referencia'],
+    currency: 'DOP' as const,
+    accountNumber: '11947210013',
+    accountType: 'Cuenta de Ahorro',
+    bankName: 'Banco BHD',
   },
 ] as const;
 

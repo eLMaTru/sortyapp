@@ -35,6 +35,9 @@ export const api = {
     me: () => request<any>('/auth/me'),
     updateWalletAddress: (walletAddress: string) =>
       request<void>('/auth/wallet-address', { method: 'PUT', body: JSON.stringify({ walletAddress }) }),
+    notifications: () => request<any[]>('/auth/notifications'),
+    dismissNotifications: () =>
+      request<void>('/auth/notifications/dismiss', { method: 'POST' }),
   },
 
   draws: {
@@ -57,8 +60,8 @@ export const api = {
     withdrawals: () => request<any[]>('/wallet/withdrawals'),
     cancelWithdrawal: (withdrawalId: string) =>
       request<any>(`/wallet/withdrawals/${withdrawalId}/cancel`, { method: 'POST' }),
-    depositMethods: () => request<any[]>('/wallet/deposit-methods'),
-    createDepositRequest: (data: { method: string; amountUSDC: number; reference?: string }) =>
+    depositMethods: () => request<{ methods: any[]; dopRate: number }>('/wallet/deposit-methods'),
+    createDepositRequest: (data: { method: string; amountUSDC: number; reference?: string; code?: string }) =>
       request<any>('/wallet/deposit-request', { method: 'POST', body: JSON.stringify(data) }),
     depositRequests: () => request<any[]>('/wallet/deposit-requests'),
   },
@@ -83,5 +86,8 @@ export const api = {
     pendingDepositRequests: () => request<any[]>('/admin/deposit-requests'),
     reviewDepositRequest: (data: { depositRequestId: string; action: 'APPROVE' | 'REJECT'; adminNote?: string }) =>
       request<any>('/admin/deposit-requests/review', { method: 'POST', body: JSON.stringify(data) }),
+    getDopRate: () => request<{ rate: number }>('/admin/dop-rate'),
+    setDopRate: (rate: number) =>
+      request<{ rate: number }>('/admin/dop-rate', { method: 'PUT', body: JSON.stringify({ rate }) }),
   },
 };

@@ -24,6 +24,10 @@ export default function AdminPage() {
   const [depositAmount, setDepositAmount] = useState('');
   const [approveTxHash, setApproveTxHash] = useState('');
 
+  // DOP rate
+  const [dopRate, setDopRate] = useState('');
+  const [dopRateSaved, setDopRateSaved] = useState(false);
+
   // Create template form
   const [newSlots, setNewSlots] = useState('5');
   const [newEntry, setNewEntry] = useState('');
@@ -42,13 +46,14 @@ export default function AdminPage() {
 
   const loadData = async () => {
     try {
-      const [u, w, tpl, d, m, dr] = await Promise.all([
+      const [u, w, tpl, d, m, dr, dopData] = await Promise.all([
         api.admin.users(),
         api.admin.pendingWithdrawals(),
         api.admin.templates(),
         api.admin.draws(drawMode),
         api.admin.metrics(),
         api.admin.pendingDepositRequests(),
+        api.admin.getDopRate(),
       ]);
       setUsers(u);
       setWithdrawals(w);
@@ -56,6 +61,7 @@ export default function AdminPage() {
       setDraws(d);
       setMetrics(m);
       setDepositRequests(dr);
+      if (dopData.rate > 0) setDopRate(String(dopData.rate));
     } catch (e: any) {
       setErr(e.message);
     }
@@ -143,6 +149,18 @@ export default function AdminPage() {
     } catch (e: any) { setErr(e.message); }
   };
 
+  const handleSaveDopRate = async () => {
+    const rate = parseFloat(dopRate);
+    if (isNaN(rate) || rate <= 0) { setErr('Enter a valid DOP rate'); return; }
+    setMsg(''); setErr('');
+    try {
+      await api.admin.setDopRate(rate);
+      setMsg(t('admin.dopRateSaved'));
+      setDopRateSaved(true);
+      setTimeout(() => setDopRateSaved(false), 2000);
+    } catch (e: any) { setErr(e.message); }
+  };
+
   const tabKeys = ['metrics', 'users', 'deposits', 'withdrawals', 'templates', 'draws'] as const;
   const tabLabels: Record<string, string> = {
     metrics: t('admin.metrics'),
@@ -176,16 +194,44 @@ export default function AdminPage() {
 
       {/* Metrics tab */}
       {tab === 'metrics' && metrics && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <MetricCard label={t('admin.totalUsers')} value={metrics.totalUsers} />
-          <MetricCard label={t('admin.drawsCompleted')} value={metrics.totalDrawsCompleted} />
-          <MetricCard label={t('admin.drawsOpen')} value={metrics.totalDrawsOpen} />
-          <MetricCard label={t('admin.totalSCSpent')} value={metrics.totalSCSpent.toLocaleString()} sub={`~$${(metrics.totalSCSpent / 100).toFixed(2)}`} />
-          <MetricCard label={t('admin.totalFeeSC')} value={metrics.totalFeeSC.toLocaleString()} sub={`~$${(metrics.totalFeeSC / 100).toFixed(2)}`} color="text-brand-500" />
-          <MetricCard label={t('admin.pendingWithdrawals')} value={metrics.totalWithdrawalsPending} color={metrics.totalWithdrawalsPending > 0 ? 'text-yellow-600' : undefined} />
-          <MetricCard label={t('admin.sentWithdrawals')} value={metrics.totalWithdrawalsSent} />
-          <MetricCard label={t('admin.recentDraws')} value={metrics.recentDraws} />
-          <MetricCard label={t('admin.recentUsers')} value={metrics.recentUsers} />
+        <div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <MetricCard label={t('admin.totalUsers')} value={metrics.totalUsers} />
+            <MetricCard label={t('admin.drawsCompleted')} value={metrics.totalDrawsCompleted} />
+            <MetricCard label={t('admin.drawsOpen')} value={metrics.totalDrawsOpen} />
+            <MetricCard label={t('admin.totalSCSpent')} value={metrics.totalSCSpent.toLocaleString()} sub={`~$${(metrics.totalSCSpent / 100).toFixed(2)}`} />
+            <MetricCard label={t('admin.totalFeeSC')} value={metrics.totalFeeSC.toLocaleString()} sub={`~$${(metrics.totalFeeSC / 100).toFixed(2)}`} color="text-brand-500" />
+            <MetricCard label={t('admin.pendingWithdrawals')} value={metrics.totalWithdrawalsPending} color={metrics.totalWithdrawalsPending > 0 ? 'text-yellow-600' : undefined} />
+            <MetricCard label={t('admin.sentWithdrawals')} value={metrics.totalWithdrawalsSent} />
+            <MetricCard label={t('admin.recentDraws')} value={metrics.recentDraws} />
+            <MetricCard label={t('admin.recentUsers')} value={metrics.recentUsers} />
+          </div>
+
+          {/* DOP Rate Config */}
+          <div className="mt-6 bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-4">
+            <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">{t('admin.dopRateTitle')}</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{t('admin.dopRateHint')}</p>
+            <div className="flex gap-3 items-end">
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">RD$ / 1 USD</label>
+                <input
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  value={dopRate}
+                  onChange={(e) => setDopRate(e.target.value)}
+                  className="border border-gray-300 dark:border-surface-dark-3 dark:bg-surface-dark rounded px-2 py-1.5 text-sm w-32 dark:text-white"
+                  placeholder="ej. 60.50"
+                />
+              </div>
+              <button
+                onClick={handleSaveDopRate}
+                className="bg-brand-500 text-white px-4 py-1.5 rounded text-sm hover:bg-brand-600"
+              >
+                {dopRateSaved ? t('admin.saved') : t('admin.saveDopRate')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

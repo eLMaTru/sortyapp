@@ -7,6 +7,7 @@ import { LanguageProvider } from '@/contexts/LanguageContext';
 import Navbar from '@/components/Navbar';
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
 import InstallPWA from '@/components/InstallPWA';
+import ExpiredDrawNotification from '@/components/ExpiredDrawNotification';
 
 export const metadata: Metadata = {
   title: 'SORTYAPP - Salas & Sorteos',
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   {children}
                 </main>
                 <InstallPWA />
+                <ExpiredDrawNotification />
               </ModeProvider>
             </AuthProvider>
           </LanguageProvider>

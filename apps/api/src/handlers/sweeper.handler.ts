@@ -7,13 +7,15 @@ import { depositService } from '../services/deposit.service';
 /**
  * EventBridge sweeper: runs every 5 minutes.
  * 1. Finalizes stuck COUNTDOWN draws (safety net — getDraw auto-finalizes on poll)
- * 2. Recomputes cached rankings (daily) and metrics (every 30 min)
+ * 2. Expires stale OPEN draws (REAL 24h, DEMO 1h) and refunds participants
+ * 3. Recomputes cached rankings (daily) and metrics (every 30 min)
  *
  * Demo rooms are NOT filled here — bots join instantly via autoFillDemoBots
  * when a real user clicks "Participate".
  */
 export const handler = async (): Promise<void> => {
   await finalizeStuckDraws();
+  await expireStaleOpenDraws();
   await expireDepositRequests();
   await recomputeCachedData();
 };
@@ -58,6 +60,18 @@ async function finalizeStuckDraws(): Promise<void> {
         console.error(`[SWEEPER] Failed to finalize ${draw.drawId}:`, err);
       }
     }
+  }
+}
+
+// ─── Expire stale OPEN draws (REAL 24h, DEMO 1h) ─────────────────────────
+async function expireStaleOpenDraws(): Promise<void> {
+  try {
+    const expired = await drawService.expireStaleDraws();
+    if (expired > 0) {
+      console.log(`[SWEEPER] Expired ${expired} stale OPEN draw(s)`);
+    }
+  } catch (err) {
+    console.error('[SWEEPER] Stale draw expiry failed:', err);
   }
 }
 

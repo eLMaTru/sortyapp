@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import {
   SimulateDepositSchema,
   ApproveWithdrawalSchema,
@@ -12,6 +13,7 @@ import { depositService } from '../services/deposit.service';
 import { drawService } from '../services/draw.service';
 import { userService } from '../services/user.service';
 import { metricsService } from '../services/metrics.service';
+import { ddb, tables } from '../lib/dynamo';
 
 const router = Router();
 
@@ -136,6 +138,32 @@ router.post('/ensure-open-draws', async (_req, res, next) => {
   try {
     await drawService.ensureOpenDraws();
     res.json({ success: true, message: 'Open draws ensured for all templates' });
+  } catch (err) { next(err); }
+});
+
+// ─── DOP Exchange Rate ────────────────────────────────────────────────────
+router.get('/dop-rate', async (_req, res, next) => {
+  try {
+    const result = await ddb.send(new GetCommand({
+      TableName: tables.cache,
+      Key: { pk: 'CONFIG', sk: 'DOP_RATE' },
+    }));
+    const rate = result.Item?.rate ?? 0;
+    res.json({ success: true, data: { rate } });
+  } catch (err) { next(err); }
+});
+
+router.put('/dop-rate', async (req, res, next) => {
+  try {
+    const rate = parseFloat(req.body.rate);
+    if (isNaN(rate) || rate <= 0) {
+      return res.status(400).json({ success: false, error: 'Invalid rate' });
+    }
+    await ddb.send(new PutCommand({
+      TableName: tables.cache,
+      Item: { pk: 'CONFIG', sk: 'DOP_RATE', rate, updatedAt: new Date().toISOString() },
+    }));
+    res.json({ success: true, data: { rate } });
   } catch (err) { next(err); }
 });
 

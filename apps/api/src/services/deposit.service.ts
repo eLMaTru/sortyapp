@@ -20,7 +20,7 @@ function generateDepositCode(): string {
 }
 
 class DepositService {
-  async create(userId: string, username: string, method: DepositMethod, amountUSDC: number, reference?: string): Promise<DepositRequest> {
+  async create(userId: string, username: string, method: DepositMethod, amountUSDC: number, reference?: string, code?: string): Promise<DepositRequest> {
     // Check daily limit
     await this.checkDailyLimit(userId, amountUSDC);
 
@@ -41,7 +41,7 @@ class DepositService {
       method,
       amountUSDC,
       amountCredits,
-      code: generateDepositCode(),
+      code: code || generateDepositCode(),
       reference,
       status: 'PENDING',
       createdAt: now.toISOString(),
