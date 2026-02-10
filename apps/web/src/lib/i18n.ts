@@ -120,6 +120,11 @@ const translations = {
   'room.notFound': { es: 'Sorteo no encontrado.', en: 'Draw not found.' },
   'room.full': { es: 'Esta sala ya está llena.', en: 'This room is already full.' },
   'room.browseOther': { es: 'Ver otras salas disponibles', en: 'Browse other available rooms' },
+  'room.insufficientBalance': {
+    es: 'No tienes suficientes créditos. Necesitas ${needed} SC pero tienes ${balance} SC.',
+    en: 'Not enough credits. You need ${needed} SC but have ${balance} SC.',
+  },
+  'room.rechargeLink': { es: 'Recargar créditos', en: 'Recharge credits' },
   'room.playAgain': { es: 'Jugar de Nuevo', en: 'Play Again' },
   'room.searching': { es: 'Buscando sala...', en: 'Searching room...' },
   'rooms.noMatchToast': {
@@ -290,6 +295,27 @@ const translations = {
   'ticker.won': { es: 'ganó', en: 'won' },
   'ticker.wins': { es: 'victorias', en: 'wins' },
   'ticker.topPlayer': { es: 'Top jugador', en: 'Top player' },
+
+  // ───────── Real Mode Modal ─────────
+  'realMode.title': { es: 'Cambiar a Modo Real', en: 'Switch to Real Mode' },
+  'realMode.message': {
+    es: 'En el modo Real usarás tus créditos reales (SC). Las entradas a sorteos y cualquier pérdida NO son reversibles. Asegúrate de estar listo antes de continuar.',
+    en: 'In Real mode you will use your real credits (SC). Draw entries and any losses are NOT reversible. Make sure you are ready before continuing.',
+  },
+  'realMode.confirm': { es: 'Sí, cambiar a Real', en: 'Yes, switch to Real' },
+  'realMode.cancel': { es: 'Quedarme en Demo', en: 'Stay in Demo' },
+
+  // ───────── PWA Install ─────────
+  'pwa.title': { es: 'Instalar SORTYAPP', en: 'Install SORTYAPP' },
+  'pwa.description': {
+    es: 'Instala la app en tu dispositivo para acceso rápido.',
+    en: 'Install the app on your device for quick access.',
+  },
+  'pwa.install': { es: 'Instalar App', en: 'Install App' },
+  'pwa.iosHint': {
+    es: 'Toca el botón Compartir y luego "Agregar a pantalla de inicio" para instalar.',
+    en: 'Tap the Share button and then "Add to Home Screen" to install.',
+  },
 
   // ───────── Common ─────────
   'common.demo': { es: 'Demo', en: 'Demo' },

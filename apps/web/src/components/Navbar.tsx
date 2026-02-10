@@ -13,8 +13,22 @@ export default function Navbar() {
   const { isDark, toggleTheme } = useTheme();
   const { locale, setLocale, t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showRealModal, setShowRealModal] = useState(false);
 
   const balance = user ? (isDemoMode ? user.demoBalance : user.realBalance) : 0;
+
+  const handleModeSwitch = (target: 'DEMO' | 'REAL') => {
+    if (target === 'REAL' && isDemoMode) {
+      setShowRealModal(true);
+    } else {
+      setMode(target);
+    }
+  };
+
+  const confirmRealMode = () => {
+    setMode('REAL');
+    setShowRealModal(false);
+  };
 
   return (
     <nav className="bg-brand-500 dark:bg-surface-dark-2 border-b border-brand-600 dark:border-surface-dark-3 sticky top-0 z-50 transition-colors">
@@ -89,7 +103,7 @@ export default function Navbar() {
                   {/* Mode Toggle */}
                   <div className="flex rounded-lg overflow-hidden border border-white/30">
                     <button
-                      onClick={() => setMode('DEMO')}
+                      onClick={() => handleModeSwitch('DEMO')}
                       className={`px-3 py-1 text-xs font-semibold transition-colors ${
                         isDemoMode
                           ? 'bg-demo text-white'
@@ -99,7 +113,7 @@ export default function Navbar() {
                       DEMO
                     </button>
                     <button
-                      onClick={() => setMode('REAL')}
+                      onClick={() => handleModeSwitch('REAL')}
                       className={`px-3 py-1 text-xs font-semibold transition-colors ${
                         !isDemoMode
                           ? 'bg-real text-white'
@@ -167,7 +181,7 @@ export default function Navbar() {
                 {/* Mode Toggle */}
                 <div className="flex rounded-lg overflow-hidden border border-white/30 w-fit">
                   <button
-                    onClick={() => setMode('DEMO')}
+                    onClick={() => handleModeSwitch('DEMO')}
                     className={`px-4 py-1.5 text-xs font-semibold transition-colors ${
                       isDemoMode
                         ? 'bg-demo text-white'
@@ -177,7 +191,7 @@ export default function Navbar() {
                     DEMO
                   </button>
                   <button
-                    onClick={() => setMode('REAL')}
+                    onClick={() => handleModeSwitch('REAL')}
                     className={`px-4 py-1.5 text-xs font-semibold transition-colors ${
                       !isDemoMode
                         ? 'bg-real text-white'
@@ -266,6 +280,33 @@ export default function Navbar() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* Real Mode Confirmation Modal */}
+      {showRealModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white dark:bg-surface-dark-2 rounded-lg shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">
+              {t('realMode.title')}
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-5 leading-relaxed">
+              {t('realMode.message')}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowRealModal(false)}
+                className="flex-1 px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 dark:border-surface-dark-3 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-surface-dark-3 transition-colors"
+              >
+                {t('realMode.cancel')}
+              </button>
+              <button
+                onClick={confirmRealMode}
+                className="flex-1 px-4 py-2 text-sm font-medium rounded-lg bg-real text-white hover:bg-real/90 transition-colors"
+              >
+                {t('realMode.confirm')}
+              </button>
+            </div>
           </div>
         </div>
       )}

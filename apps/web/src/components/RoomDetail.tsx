@@ -112,6 +112,8 @@ export default function RoomDetail() {
     (uid: string) => draw.participantUsernames?.[uid] || uid.slice(0, 8)
   );
   const hasJoined = user && draw.participants?.includes(user.userId);
+  const balance = user ? (draw.mode === 'DEMO' ? user.demoBalance : user.realBalance) : 0;
+  const hasEnoughBalance = balance >= (draw.entryCredits || 0);
   const canJoin = user && draw.status === 'OPEN' && !hasJoined;
 
   const winnerIndex = draw.winnerId
@@ -195,7 +197,7 @@ export default function RoomDetail() {
         </div>
       )}
 
-      {canJoin && (
+      {canJoin && hasEnoughBalance && (
         <button
           onClick={() => setShowConfirm(true)}
           disabled={joining}
@@ -203,6 +205,21 @@ export default function RoomDetail() {
         >
           {joining ? t('room.joining') : `${t('room.participate')} - ${draw.entryCredits?.toLocaleString()} SC`}
         </button>
+      )}
+
+      {canJoin && !hasEnoughBalance && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-center mb-6">
+          <p className="text-sm text-yellow-800 dark:text-yellow-300">
+            {t('room.insufficientBalance')
+              .replace('${needed}', draw.entryCredits?.toLocaleString())
+              .replace('${balance}', balance.toLocaleString())}
+          </p>
+          {draw.mode === 'REAL' && (
+            <Link href="/deposit" className="inline-block mt-2 text-sm font-medium text-brand-500 hover:text-brand-600 hover:underline">
+              {t('room.rechargeLink')}
+            </Link>
+          )}
+        </div>
       )}
 
       {hasJoined && draw.status !== 'COMPLETED' && (

@@ -243,11 +243,7 @@ class DrawService {
       description: `Joined draw ${draw.drawId.slice(0, 8)} (${draw.entryDollars} USDC, ${draw.totalSlots} slots)`,
     });
 
-    // Add participant to draw (conditional: still OPEN and not full)
-    const newFilledSlots = draw.filledSlots + 1;
-    const newPool = draw.pool + draw.entryCredits;
-    const isFull = newFilledSlots >= draw.totalSlots;
-
+    // Add participant to draw using ATOMIC increments (prevents race conditions with stale reads)
     try {
       const result = await ddb.send(new UpdateCommand({
         TableName: tables.draws,
@@ -255,12 +251,11 @@ class DrawService {
         UpdateExpression: `
           SET participants = list_append(participants, :uid),
               participantUsernames.#username = :uname,
-              filledSlots = :filled,
-              #pool = :pool,
-              #status = :newStatus,
+              filledSlots = filledSlots + :one,
+              #pool = #pool + :entryCredits,
               updatedAt = :now
         `,
-        ConditionExpression: '#status = :open AND filledSlots < :totalSlots AND NOT contains(participants, :userId)',
+        ConditionExpression: '#status = :open AND filledSlots < totalSlots AND NOT contains(participants, :userId)',
         ExpressionAttributeNames: {
           '#status': 'status',
           '#pool': 'pool',
@@ -269,11 +264,9 @@ class DrawService {
         ExpressionAttributeValues: {
           ':uid': [userId],
           ':uname': user.username,
-          ':filled': newFilledSlots,
-          ':pool': newPool,
-          ':newStatus': isFull ? 'FULL' : 'OPEN',
+          ':one': 1,
+          ':entryCredits': draw.entryCredits,
           ':open': 'OPEN',
-          ':totalSlots': draw.totalSlots,
           ':userId': userId,
           ':now': new Date().toISOString(),
         },
@@ -283,11 +276,12 @@ class DrawService {
       const updatedDraw = result.Attributes as Draw;
 
       // Auto-fill DEMO rooms with bots when a real user joins (not a bot)
-      if (updatedDraw.mode === 'DEMO' && updatedDraw.status === 'OPEN' && !user.username.startsWith('Demo')) {
+      if (updatedDraw.mode === 'DEMO' && updatedDraw.filledSlots < updatedDraw.totalSlots && !user.username.startsWith('Demo')) {
         await this.autoFillDemoBots(drawId);
       }
 
-      if (isFull) {
+      // If this join filled the room, start countdown (checked from returned atomic value)
+      if (updatedDraw.filledSlots >= updatedDraw.totalSlots) {
         await this.startCountdown(updatedDraw);
       }
 
@@ -352,27 +346,38 @@ class DrawService {
     const commitHash = computeCommitHash(serverSeed, publicSeed);
     const countdownEndsAt = new Date(Date.now() + COUNTDOWN_SECONDS * 1000).toISOString();
 
-    await ddb.send(new UpdateCommand({
-      TableName: tables.draws,
-      Key: { drawId: draw.drawId },
-      UpdateExpression: `
-        SET #status = :countdown,
-            serverSeed = :ss,
-            publicSeed = :ps,
-            commitHash = :ch,
-            countdownEndsAt = :ce,
-            updatedAt = :now
-      `,
-      ExpressionAttributeNames: { '#status': 'status' },
-      ExpressionAttributeValues: {
-        ':countdown': 'COUNTDOWN',
-        ':ss': serverSeed,
-        ':ps': publicSeed,
-        ':ch': commitHash,
-        ':ce': countdownEndsAt,
-        ':now': new Date().toISOString(),
-      },
-    }));
+    // Idempotent transition: only OPEN → COUNTDOWN (prevents double countdown start)
+    try {
+      await ddb.send(new UpdateCommand({
+        TableName: tables.draws,
+        Key: { drawId: draw.drawId },
+        UpdateExpression: `
+          SET #status = :countdown,
+              serverSeed = :ss,
+              publicSeed = :ps,
+              commitHash = :ch,
+              countdownEndsAt = :ce,
+              updatedAt = :now
+        `,
+        ConditionExpression: '#status = :open',
+        ExpressionAttributeNames: { '#status': 'status' },
+        ExpressionAttributeValues: {
+          ':countdown': 'COUNTDOWN',
+          ':open': 'OPEN',
+          ':ss': serverSeed,
+          ':ps': publicSeed,
+          ':ch': commitHash,
+          ':ce': countdownEndsAt,
+          ':now': new Date().toISOString(),
+        },
+      }));
+    } catch (err: any) {
+      if (err.name === 'ConditionalCheckFailedException') {
+        console.log(`[DRAW] ${draw.drawId} already past OPEN, skipping countdown start`);
+        return;
+      }
+      throw err;
+    }
 
     // Schedule finalization (local: setTimeout; production: EventBridge)
     const timer = setTimeout(() => {
