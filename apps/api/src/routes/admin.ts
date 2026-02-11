@@ -126,9 +126,11 @@ router.post('/draws/:drawId/simulate-join', async (req, res, next) => {
 });
 
 // ─── Metrics ──────────────────────────────────────────────────────────────
-router.get('/metrics', async (_req, res, next) => {
+router.get('/metrics', async (req, res, next) => {
   try {
-    const metrics = await metricsService.getAdminMetrics();
+    const mode = req.query.mode as string | undefined;
+    const validMode = mode === 'DEMO' || mode === 'REAL' ? mode : undefined;
+    const metrics = await metricsService.getAdminMetrics(validMode as any);
     res.json({ success: true, data: metrics });
   } catch (err) { next(err); }
 });
@@ -164,6 +166,55 @@ router.put('/dop-rate', async (req, res, next) => {
       Item: { pk: 'CONFIG', sk: 'DOP_RATE', rate, updatedAt: new Date().toISOString() },
     }));
     res.json({ success: true, data: { rate } });
+  } catch (err) { next(err); }
+});
+
+// ─── Payment Methods Config ──────────────────────────────────────────────
+const defaultPaymentMethods: Record<string, { deposit: boolean; withdraw: boolean }> = {
+  BINANCE:      { deposit: true, withdraw: true },
+  PAYPAL:       { deposit: true, withdraw: true },
+  BANK_POPULAR: { deposit: true, withdraw: true },
+  BANK_BHD:     { deposit: true, withdraw: true },
+  POLYGON:      { deposit: false, withdraw: true },
+};
+
+router.get('/payment-methods', async (_req, res, next) => {
+  try {
+    const result = await ddb.send(new GetCommand({
+      TableName: tables.cache,
+      Key: { pk: 'CONFIG', sk: 'PAYMENT_METHODS' },
+    }));
+    const methods = result.Item?.methods ?? defaultPaymentMethods;
+    res.json({ success: true, data: methods });
+  } catch (err) { next(err); }
+});
+
+router.put('/payment-methods', async (req, res, next) => {
+  try {
+    const { method, deposit, withdraw } = req.body;
+    const validMethods = ['BINANCE', 'PAYPAL', 'BANK_POPULAR', 'BANK_BHD', 'POLYGON'];
+    if (!validMethods.includes(method)) {
+      return res.status(400).json({ success: false, error: 'Invalid method' });
+    }
+
+    // Fetch current config
+    const result = await ddb.send(new GetCommand({
+      TableName: tables.cache,
+      Key: { pk: 'CONFIG', sk: 'PAYMENT_METHODS' },
+    }));
+    const methods = result.Item?.methods ?? { ...defaultPaymentMethods };
+
+    methods[method] = {
+      deposit: typeof deposit === 'boolean' ? deposit : methods[method]?.deposit ?? true,
+      withdraw: typeof withdraw === 'boolean' ? withdraw : methods[method]?.withdraw ?? true,
+    };
+
+    await ddb.send(new PutCommand({
+      TableName: tables.cache,
+      Item: { pk: 'CONFIG', sk: 'PAYMENT_METHODS', methods, updatedAt: new Date().toISOString() },
+    }));
+
+    res.json({ success: true, data: methods });
   } catch (err) { next(err); }
 });
 

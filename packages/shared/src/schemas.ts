@@ -23,8 +23,40 @@ export const SimulateDepositSchema = z.object({
 });
 
 export const WithdrawalRequestSchema = z.object({
+  method: z.enum(['POLYGON', 'BINANCE', 'PAYPAL', 'BANK_POPULAR', 'BANK_BHD']),
   amountCredits: z.number().int().positive(),
-  walletAddress: z.string().regex(evmAddressRegex, 'Invalid Polygon wallet address (must be 0x + 40 hex characters)'),
+  walletAddress: z.string().optional(),
+  binancePayId: z.string().optional(),
+  paypalEmail: z.string().optional(),
+  accountNumber: z.string().optional(),
+  accountHolder: z.string().optional(),
+}).superRefine((data, ctx) => {
+  switch (data.method) {
+    case 'POLYGON':
+      if (!data.walletAddress || !evmAddressRegex.test(data.walletAddress)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Invalid Polygon wallet address (must be 0x + 40 hex characters)', path: ['walletAddress'] });
+      }
+      break;
+    case 'BINANCE':
+      if (!data.binancePayId?.trim()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Binance Pay ID is required', path: ['binancePayId'] });
+      }
+      break;
+    case 'PAYPAL':
+      if (!data.paypalEmail?.trim()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'PayPal email is required', path: ['paypalEmail'] });
+      }
+      break;
+    case 'BANK_POPULAR':
+    case 'BANK_BHD':
+      if (!data.accountNumber?.trim()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Account number is required', path: ['accountNumber'] });
+      }
+      if (!data.accountHolder?.trim()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Account holder name is required', path: ['accountHolder'] });
+      }
+      break;
+  }
 });
 
 export const ApproveWithdrawalSchema = z.object({

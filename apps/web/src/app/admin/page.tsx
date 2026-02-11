@@ -17,6 +17,7 @@ export default function AdminPage() {
   const [draws, setDraws] = useState<any[]>([]);
   const [metrics, setMetrics] = useState<any>(null);
   const [drawMode, setDrawMode] = useState<'DEMO' | 'REAL'>('REAL');
+  const [metricsMode, setMetricsMode] = useState<'DEMO' | 'REAL'>('REAL');
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
 
@@ -27,6 +28,9 @@ export default function AdminPage() {
   // DOP rate
   const [dopRate, setDopRate] = useState('');
   const [dopRateSaved, setDopRateSaved] = useState(false);
+
+  // Payment methods config
+  const [paymentMethods, setPaymentMethods] = useState<Record<string, { deposit: boolean; withdraw: boolean }>>({});
 
   // Create template form
   const [newSlots, setNewSlots] = useState('5');
@@ -44,16 +48,23 @@ export default function AdminPage() {
     api.admin.draws(drawMode).then(setDraws).catch((e: any) => setErr(e.message));
   }, [drawMode, user]);
 
+  // Reload metrics when metricsMode changes
+  useEffect(() => {
+    if (user?.role !== 'ADMIN') return;
+    api.admin.metrics(metricsMode).then(setMetrics).catch((e: any) => setErr(e.message));
+  }, [metricsMode, user]);
+
   const loadData = async () => {
     try {
-      const [u, w, tpl, d, m, dr, dopData] = await Promise.all([
+      const [u, w, tpl, d, m, dr, dopData, pmData] = await Promise.all([
         api.admin.users(),
         api.admin.pendingWithdrawals(),
         api.admin.templates(),
         api.admin.draws(drawMode),
-        api.admin.metrics(),
+        api.admin.metrics(metricsMode),
         api.admin.pendingDepositRequests(),
         api.admin.getDopRate(),
+        api.admin.getPaymentMethods(),
       ]);
       setUsers(u);
       setWithdrawals(w);
@@ -62,6 +73,7 @@ export default function AdminPage() {
       setMetrics(m);
       setDepositRequests(dr);
       if (dopData.rate > 0) setDopRate(String(dopData.rate));
+      setPaymentMethods(pmData);
     } catch (e: any) {
       setErr(e.message);
     }
@@ -149,6 +161,18 @@ export default function AdminPage() {
     } catch (e: any) { setErr(e.message); }
   };
 
+  const handleTogglePaymentMethod = async (method: string, field: 'deposit' | 'withdraw') => {
+    setMsg(''); setErr('');
+    const current = paymentMethods[method] || { deposit: true, withdraw: true };
+    const newDeposit = field === 'deposit' ? !current.deposit : current.deposit;
+    const newWithdraw = field === 'withdraw' ? !current.withdraw : current.withdraw;
+    try {
+      const updated = await api.admin.updatePaymentMethod(method, newDeposit, newWithdraw);
+      setPaymentMethods(updated);
+      setMsg(t('admin.saved'));
+    } catch (e: any) { setErr(e.message); }
+  };
+
   const handleSaveDopRate = async () => {
     const rate = parseFloat(dopRate);
     if (isNaN(rate) || rate <= 0) { setErr('Enter a valid DOP rate'); return; }
@@ -195,6 +219,33 @@ export default function AdminPage() {
       {/* Metrics tab */}
       {tab === 'metrics' && metrics && (
         <div>
+          {/* DEMO / REAL toggle */}
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-sm text-gray-600 dark:text-gray-400">{t('admin.metricsMode')}:</span>
+            <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-surface-dark-3">
+              <button
+                onClick={() => setMetricsMode('REAL')}
+                className={`px-4 py-1.5 text-xs font-semibold transition-colors ${
+                  metricsMode === 'REAL'
+                    ? 'bg-real text-white'
+                    : 'bg-white dark:bg-surface-dark text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-surface-dark-2'
+                }`}
+              >
+                REAL
+              </button>
+              <button
+                onClick={() => setMetricsMode('DEMO')}
+                className={`px-4 py-1.5 text-xs font-semibold transition-colors ${
+                  metricsMode === 'DEMO'
+                    ? 'bg-demo text-white'
+                    : 'bg-white dark:bg-surface-dark text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-surface-dark-2'
+                }`}
+              >
+                DEMO
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <MetricCard label={t('admin.totalUsers')} value={metrics.totalUsers} />
             <MetricCard label={t('admin.drawsCompleted')} value={metrics.totalDrawsCompleted} />
@@ -230,6 +281,52 @@ export default function AdminPage() {
               >
                 {dopRateSaved ? t('admin.saved') : t('admin.saveDopRate')}
               </button>
+            </div>
+          </div>
+
+          {/* Payment Methods Config */}
+          <div className="mt-6 bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-4">
+            <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">{t('admin.paymentMethodsTitle')}</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{t('admin.paymentMethodsHint')}</p>
+            <div className="space-y-3">
+              {[
+                { key: 'BINANCE', label: 'Binance Pay' },
+                { key: 'PAYPAL', label: 'PayPal' },
+                { key: 'BANK_POPULAR', label: 'Banco Popular' },
+                { key: 'BANK_BHD', label: 'Banco BHD' },
+                { key: 'POLYGON', label: 'Polygon (USDC)' },
+              ].map((m) => {
+                const cfg = paymentMethods[m.key] || { deposit: true, withdraw: true };
+                return (
+                  <div key={m.key} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-surface-dark-3 last:border-0">
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{m.label}</span>
+                    <div className="flex gap-4">
+                      {m.key !== 'POLYGON' && (
+                        <button
+                          onClick={() => handleTogglePaymentMethod(m.key, 'deposit')}
+                          className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+                            cfg.deposit
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                              : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                          }`}
+                        >
+                          {t('admin.pmDeposit')}: {cfg.deposit ? 'ON' : 'OFF'}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleTogglePaymentMethod(m.key, 'withdraw')}
+                        className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+                          cfg.withdraw
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                            : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                        }`}
+                      >
+                        {t('admin.pmWithdraw')}: {cfg.withdraw ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -360,10 +457,26 @@ export default function AdminPage() {
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      ${w.netUSDC} USDC to {w.walletAddress.slice(0, 10)}...
+                      ${w.netUSDC} USDC &middot; <span className="text-brand-500">{w.method || 'POLYGON'}</span>
                     </div>
-                    <div className="text-xs text-gray-400">
-                      User: {w.userId.slice(0, 8)} &middot; Fee: ${w.feeUSDC}
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      {w.method === 'BINANCE' && w.paymentDetails?.binancePayId && (
+                        <>Binance Pay ID: <span className="font-mono font-bold">{w.paymentDetails.binancePayId}</span></>
+                      )}
+                      {w.method === 'PAYPAL' && w.paymentDetails?.paypalEmail && (
+                        <>PayPal: <span className="font-bold">{w.paymentDetails.paypalEmail}</span></>
+                      )}
+                      {(w.method === 'BANK_POPULAR' || w.method === 'BANK_BHD') && w.paymentDetails && (
+                        <>
+                          {w.paymentDetails.accountHolder} &middot; Cuenta: <span className="font-mono font-bold">{w.paymentDetails.accountNumber}</span>
+                        </>
+                      )}
+                      {(!w.method || w.method === 'POLYGON') && w.walletAddress && (
+                        <>Wallet: <span className="font-mono">{w.walletAddress.slice(0, 14)}...{w.walletAddress.slice(-6)}</span></>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-0.5">
+                      User: {w.userId.slice(0, 8)} &middot; Fee: ${w.feeUSDC} &middot; {new Date(w.createdAt).toLocaleString()}
                     </div>
                   </div>
                   <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full">

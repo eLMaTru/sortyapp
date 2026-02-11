@@ -38,6 +38,8 @@ export const api = {
     notifications: () => request<any[]>('/auth/notifications'),
     dismissNotifications: () =>
       request<void>('/auth/notifications/dismiss', { method: 'POST' }),
+    savePaymentDetails: (method: string, details: Record<string, string>) =>
+      request<void>('/auth/payment-details', { method: 'PUT', body: JSON.stringify({ method, details }) }),
   },
 
   draws: {
@@ -55,12 +57,20 @@ export const api = {
 
   wallet: {
     transactions: () => request<any[]>('/wallet/transactions'),
-    withdraw: (data: { amountCredits: number; walletAddress: string }) =>
+    withdraw: (data: {
+      method: string;
+      amountCredits: number;
+      walletAddress?: string;
+      binancePayId?: string;
+      paypalEmail?: string;
+      accountNumber?: string;
+      accountHolder?: string;
+    }) =>
       request<any>('/wallet/withdraw', { method: 'POST', body: JSON.stringify(data) }),
     withdrawals: () => request<any[]>('/wallet/withdrawals'),
     cancelWithdrawal: (withdrawalId: string) =>
       request<any>(`/wallet/withdrawals/${withdrawalId}/cancel`, { method: 'POST' }),
-    depositMethods: () => request<{ methods: any[]; dopRate: number }>('/wallet/deposit-methods'),
+    depositMethods: () => request<{ methods: any[]; dopRate: number; withdrawMethods: string[] }>('/wallet/deposit-methods'),
     createDepositRequest: (data: { method: string; amountUSDC: number; reference?: string; code?: string }) =>
       request<any>('/wallet/deposit-request', { method: 'POST', body: JSON.stringify(data) }),
     depositRequests: () => request<any[]>('/wallet/deposit-requests'),
@@ -82,12 +92,17 @@ export const api = {
     forceFinalize: (drawId: string) =>
       request<any>(`/admin/draws/${drawId}/force-finalize`, { method: 'POST' }),
     ensureOpenDraws: () => request<any>('/admin/ensure-open-draws', { method: 'POST' }),
-    metrics: () => request<any>('/admin/metrics'),
+    metrics: (mode?: string) => request<any>(`/admin/metrics${mode ? `?mode=${mode}` : ''}`),
     pendingDepositRequests: () => request<any[]>('/admin/deposit-requests'),
     reviewDepositRequest: (data: { depositRequestId: string; action: 'APPROVE' | 'REJECT'; adminNote?: string }) =>
       request<any>('/admin/deposit-requests/review', { method: 'POST', body: JSON.stringify(data) }),
     getDopRate: () => request<{ rate: number }>('/admin/dop-rate'),
     setDopRate: (rate: number) =>
       request<{ rate: number }>('/admin/dop-rate', { method: 'PUT', body: JSON.stringify({ rate }) }),
+    getPaymentMethods: () => request<Record<string, { deposit: boolean; withdraw: boolean }>>('/admin/payment-methods'),
+    updatePaymentMethod: (method: string, deposit: boolean, withdraw: boolean) =>
+      request<Record<string, { deposit: boolean; withdraw: boolean }>>('/admin/payment-methods', {
+        method: 'PUT', body: JSON.stringify({ method, deposit, withdraw }),
+      }),
   },
 };

@@ -127,12 +127,15 @@ async function recomputeCachedData(): Promise<void> {
 
     if (now - lastMetrics > THIRTY_MIN_MS) {
       console.log('[SWEEPER] Recomputing metrics...');
-      await metricsService.recomputeMetrics();
+      await Promise.all([
+        metricsService.recomputeMetrics('REAL'),
+        metricsService.recomputeMetrics('DEMO'),
+      ]);
       await ddb.send(new PutCommand({
         TableName: tables.cache,
         Item: { pk: 'METRICS', sk: 'LAST_COMPUTED', computedAt: now },
       }));
-      console.log('[SWEEPER] Metrics recomputed');
+      console.log('[SWEEPER] Metrics recomputed (REAL + DEMO)');
     }
   } catch (err) {
     console.error('[SWEEPER] Metrics recomputation failed:', err);

@@ -12,6 +12,7 @@ interface User {
   demoBalance: number;
   realBalance: number;
   walletAddress?: string;
+  savedPaymentDetails?: Record<string, any>;
   createdAt: string;
 }
 

@@ -39,6 +39,17 @@ router.put('/wallet-address', authenticate, async (req: AuthRequest, res, next) 
   } catch (err) { next(err); }
 });
 
+router.put('/payment-details', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const { method, details } = req.body;
+    if (!method || !details || typeof details !== 'object') {
+      return res.status(400).json({ success: false, error: 'method and details required' });
+    }
+    await userService.savePaymentDetails(req.user!.userId, method, details);
+    res.json({ success: true, message: 'Payment details saved' });
+  } catch (err) { next(err); }
+});
+
 // ─── Notifications (expired draws, etc.) ─────────────────────────────────
 router.get('/notifications', authenticate, async (req: AuthRequest, res, next) => {
   try {

@@ -4,12 +4,12 @@ import { ddb, tables } from '../lib/dynamo';
 
 class MetricsService {
   /** Read metrics from cache (recomputed every 30min by sweeper) */
-  async getAdminMetrics(): Promise<AdminMetrics> {
-    // Read from cache first
+  async getAdminMetrics(mode?: WalletMode): Promise<AdminMetrics> {
+    const sk = mode ? `LATEST#${mode}` : 'LATEST';
     try {
       const cacheResult = await ddb.send(new GetCommand({
         TableName: tables.cache,
-        Key: { pk: 'METRICS', sk: 'LATEST' },
+        Key: { pk: 'METRICS', sk },
       }));
       if (cacheResult.Item?.data) {
         return cacheResult.Item.data as AdminMetrics;
@@ -19,19 +19,24 @@ class MetricsService {
     }
 
     // Cache miss (first run): compute and cache
-    return this.recomputeMetrics();
+    return this.recomputeMetrics(mode);
   }
 
   /** Full recomputation: scans all tables, writes result to cache */
-  async recomputeMetrics(): Promise<AdminMetrics> {
+  async recomputeMetrics(mode?: WalletMode): Promise<AdminMetrics> {
     const [usersResult, drawsResult, withdrawalsResult] = await Promise.all([
       ddb.send(new ScanCommand({ TableName: tables.users, Select: 'COUNT' })),
       ddb.send(new ScanCommand({ TableName: tables.draws })),
       ddb.send(new ScanCommand({ TableName: tables.withdrawals })),
     ]);
 
-    const draws = (drawsResult.Items || []) as any[];
+    let draws = (drawsResult.Items || []) as any[];
     const withdrawals = (withdrawalsResult.Items || []) as any[];
+
+    // Filter draws by mode if specified
+    if (mode) {
+      draws = draws.filter((d) => d.mode === mode);
+    }
 
     const now = Date.now();
     const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000).toISOString();
@@ -54,6 +59,7 @@ class MetricsService {
     }));
 
     const metrics: AdminMetrics = {
+      mode,
       totalUsers: usersResult.Count || 0,
       totalDrawsCompleted: completedDraws.length,
       totalDrawsOpen: openDraws.length,
@@ -66,10 +72,11 @@ class MetricsService {
     };
 
     // Write to cache
+    const sk = mode ? `LATEST#${mode}` : 'LATEST';
     try {
       await ddb.send(new PutCommand({
         TableName: tables.cache,
-        Item: { pk: 'METRICS', sk: 'LATEST', data: metrics, computedAt: Date.now() },
+        Item: { pk: 'METRICS', sk, data: metrics, computedAt: Date.now() },
       }));
     } catch (err) {
       console.error('[METRICS] Cache write failed:', err);

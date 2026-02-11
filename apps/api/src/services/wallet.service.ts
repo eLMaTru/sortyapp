@@ -4,6 +4,8 @@ import {
   Transaction,
   TransactionType,
   Withdrawal,
+  WithdrawalMethod,
+  WithdrawalPaymentDetails,
   WalletMode,
   DailyDeposit,
   creditsToUSDC,
@@ -109,7 +111,13 @@ class WalletService {
   }
 
   // ─── Withdrawals ─────────────────────────────────────────────────────────
-  async requestWithdrawal(userId: string, amountCredits: number, walletAddress: string): Promise<Withdrawal> {
+  async requestWithdrawal(
+    userId: string,
+    amountCredits: number,
+    method: WithdrawalMethod,
+    walletAddress?: string,
+    paymentDetails?: WithdrawalPaymentDetails,
+  ): Promise<Withdrawal> {
     if (amountCredits < config.minWithdrawalCredits) {
       throw new AppError(400, `Minimum withdrawal is ${config.minWithdrawalCredits} credits`);
     }
@@ -122,15 +130,25 @@ class WalletService {
     const netUSDC = Number((amountUSDC - feeUSDC).toFixed(2));
     const now = new Date().toISOString();
 
+    const methodLabels: Record<WithdrawalMethod, string> = {
+      POLYGON: 'Polygon USDC',
+      BINANCE: 'Binance Pay',
+      PAYPAL: 'PayPal',
+      BANK_POPULAR: 'Banco Popular',
+      BANK_BHD: 'Banco BHD',
+    };
+
     const withdrawal: Withdrawal = {
       withdrawalId: uuid(),
       userId,
+      method,
       amountCredits,
       amountUSDC,
       feeUSDC,
       netUSDC,
       status: 'PENDING',
-      walletAddress,
+      ...(walletAddress && { walletAddress }),
+      ...(paymentDetails && { paymentDetails }),
       createdAt: now,
       updatedAt: now,
     };
@@ -145,7 +163,7 @@ class WalletService {
       amount: -amountCredits,
       balanceAfter: newBalance,
       referenceId: withdrawal.withdrawalId,
-      description: `Withdrawal of ${netUSDC} USDC (fee: ${feeUSDC} USDC)`,
+      description: `Withdrawal of ${netUSDC} USDC via ${methodLabels[method]} (fee: ${feeUSDC} USDC)`,
     });
 
     return withdrawal;

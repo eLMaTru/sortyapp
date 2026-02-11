@@ -142,6 +142,31 @@ class UserService {
     }));
   }
 
+  async savePaymentDetails(userId: string, method: string, details: Record<string, string>): Promise<void> {
+    try {
+      // Try nested update (savedPaymentDetails already exists)
+      await ddb.send(new UpdateCommand({
+        TableName: tables.users,
+        Key: { userId },
+        UpdateExpression: 'SET savedPaymentDetails.#method = :details, updatedAt = :now',
+        ExpressionAttributeNames: { '#method': method },
+        ExpressionAttributeValues: { ':details': details, ':now': new Date().toISOString() },
+        ConditionExpression: 'attribute_exists(savedPaymentDetails)',
+      }));
+    } catch {
+      // First time: initialize the map
+      await ddb.send(new UpdateCommand({
+        TableName: tables.users,
+        Key: { userId },
+        UpdateExpression: 'SET savedPaymentDetails = :map, updatedAt = :now',
+        ExpressionAttributeValues: {
+          ':map': { [method]: details },
+          ':now': new Date().toISOString(),
+        },
+      }));
+    }
+  }
+
   private signToken(user: User): string {
     const payload = { userId: user.userId, email: user.email, role: user.role };
     // Cast needed: @types/jsonwebtoken uses branded StringValue type

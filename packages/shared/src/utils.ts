@@ -41,6 +41,7 @@ export function toPublicUser(user: {
   demoBalance: number;
   realBalance: number;
   walletAddress?: string;
+  savedPaymentDetails?: Record<string, any>;
   createdAt: string;
 }) {
   return {
@@ -52,6 +53,7 @@ export function toPublicUser(user: {
     demoBalance: user.demoBalance,
     realBalance: user.realBalance,
     walletAddress: user.walletAddress,
+    savedPaymentDetails: user.savedPaymentDetails,
     createdAt: user.createdAt,
   };
 }

@@ -19,10 +19,18 @@ router.get('/transactions', authenticate, async (req: AuthRequest, res, next) =>
 router.post('/withdraw', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const body = WithdrawalRequestSchema.parse(req.body);
+    const paymentDetails = body.method !== 'POLYGON' ? {
+      ...(body.binancePayId && { binancePayId: body.binancePayId }),
+      ...(body.paypalEmail && { paypalEmail: body.paypalEmail }),
+      ...(body.accountNumber && { accountNumber: body.accountNumber }),
+      ...(body.accountHolder && { accountHolder: body.accountHolder }),
+    } : undefined;
     const withdrawal = await walletService.requestWithdrawal(
       req.user!.userId,
       body.amountCredits,
+      body.method,
       body.walletAddress,
+      paymentDetails,
     );
     res.status(201).json({ success: true, data: withdrawal });
   } catch (err) { next(err); }
@@ -45,16 +53,30 @@ router.get('/withdrawals', authenticate, async (req: AuthRequest, res, next) => 
 // ─── Deposit requests (manual recharge) ─────────────────────────────────────
 router.get('/deposit-methods', authenticate, async (_req: AuthRequest, res, next) => {
   try {
-    // Fetch DOP rate from cache table
+    // Fetch DOP rate and payment methods config in parallel
     let dopRate = 0;
+    let paymentConfig: Record<string, { deposit: boolean; withdraw: boolean }> | null = null;
     try {
-      const result = await ddb.send(new GetCommand({
-        TableName: tables.cache,
-        Key: { pk: 'CONFIG', sk: 'DOP_RATE' },
-      }));
-      dopRate = result.Item?.rate ?? 0;
-    } catch { /* rate stays 0 */ }
-    res.json({ success: true, data: { methods: DEPOSIT_METHODS, dopRate } });
+      const [rateResult, configResult] = await Promise.all([
+        ddb.send(new GetCommand({ TableName: tables.cache, Key: { pk: 'CONFIG', sk: 'DOP_RATE' } })),
+        ddb.send(new GetCommand({ TableName: tables.cache, Key: { pk: 'CONFIG', sk: 'PAYMENT_METHODS' } })),
+      ]);
+      dopRate = rateResult.Item?.rate ?? 0;
+      paymentConfig = configResult.Item?.methods ?? null;
+    } catch { /* defaults */ }
+
+    // Filter deposit methods by enabled config
+    const enabledMethods = paymentConfig
+      ? DEPOSIT_METHODS.filter(m => paymentConfig![m.method]?.deposit !== false)
+      : DEPOSIT_METHODS;
+
+    // Build enabled withdrawal methods list
+    const allWithdrawMethods = ['BINANCE', 'PAYPAL', 'BANK_POPULAR', 'BANK_BHD', 'POLYGON'];
+    const enabledWithdrawMethods = paymentConfig
+      ? allWithdrawMethods.filter(m => paymentConfig![m]?.withdraw !== false)
+      : allWithdrawMethods;
+
+    res.json({ success: true, data: { methods: enabledMethods, dopRate, withdrawMethods: enabledWithdrawMethods } });
   } catch (err) { next(err); }
 });
 

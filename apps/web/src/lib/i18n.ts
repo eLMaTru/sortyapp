@@ -253,6 +253,22 @@ const translations = {
     en: 'Your request has been registered. Once you make the payment with the code in the memo, an admin will verify it and credit your account.',
   },
 
+  // ───────── Withdrawal Methods ─────────
+  'withdraw.selectMethod': { es: 'Método de Retiro', en: 'Withdrawal Method' },
+  'withdraw.fillRequired': { es: 'Completa todos los campos requeridos', en: 'Fill all required fields' },
+  'withdraw.success': { es: 'Retiro solicitado', en: 'Withdrawal requested' },
+  'withdraw.binancePayId': { es: 'Tu Binance Pay ID', en: 'Your Binance Pay ID' },
+  'withdraw.binancePayIdHint': { es: 'Ingresa tu Binance Pay ID para recibir el pago', en: 'Enter your Binance Pay ID to receive payment' },
+  'withdraw.paypalEmail': { es: 'Tu Correo PayPal', en: 'Your PayPal Email' },
+  'withdraw.paypalEmailHint': { es: 'Ingresa tu correo de PayPal para recibir el pago', en: 'Enter your PayPal email to receive payment' },
+  'withdraw.accountHolder': { es: 'Titular de la Cuenta', en: 'Account Holder' },
+  'withdraw.accountHolderHint': { es: 'Nombre completo del titular', en: 'Full name of account holder' },
+  'withdraw.accountNumber': { es: 'Número de Cuenta', en: 'Account Number' },
+  'withdraw.accountNumberHint': { es: 'Número de cuenta de ahorro', en: 'Savings account number' },
+  'withdraw.insufficientBalance': { es: 'Balance insuficiente. Necesitas ${needed} SC pero tienes ${balance} SC.', en: 'Insufficient balance. You need ${needed} SC but have ${balance} SC.' },
+  'withdraw.minAmountError': { es: 'El monto mínimo de retiro es $10 USDC', en: 'Minimum withdrawal amount is $10 USDC' },
+  'withdraw.savedDetails': { es: 'Datos guardados', en: 'Saved details' },
+
   // ───────── Admin ─────────
   'admin.title': { es: 'Panel de Admin', en: 'Admin Panel' },
   'admin.users': { es: 'Usuarios', en: 'Users' },
@@ -291,6 +307,13 @@ const translations = {
   'admin.saveDopRate': { es: 'Guardar Tasa', en: 'Save Rate' },
   'admin.saved': { es: 'Guardado', en: 'Saved' },
   'admin.dopRateSaved': { es: 'Tasa DOP/USD actualizada', en: 'DOP/USD rate updated' },
+  'admin.paymentMethodsTitle': { es: 'Métodos de Pago', en: 'Payment Methods' },
+  'admin.paymentMethodsHint': {
+    es: 'Activa o desactiva los métodos de depósito y retiro disponibles para los usuarios.',
+    en: 'Enable or disable deposit and withdrawal methods available to users.',
+  },
+  'admin.pmDeposit': { es: 'Depósito', en: 'Deposit' },
+  'admin.pmWithdraw': { es: 'Retiro', en: 'Withdraw' },
   'admin.deposits': { es: 'Depósitos', en: 'Deposits' },
   'admin.noDeposits': { es: 'Sin depósitos pendientes.', en: 'No pending deposits.' },
   'admin.depositApproved': { es: 'Depósito aprobado', en: 'Deposit approved' },
@@ -330,6 +353,7 @@ const translations = {
   'admin.sentWithdrawals': { es: 'Retiros Enviados', en: 'Sent Withdrawals' },
   'admin.recentDraws': { es: 'Sorteos (24h)', en: 'Draws (24h)' },
   'admin.recentUsers': { es: 'Nuevos Usuarios (24h)', en: 'New Users (24h)' },
+  'admin.metricsMode': { es: 'Modo de Métricas', en: 'Metrics Mode' },
 
   // ───────── Ticker ─────────
   'ticker.won': { es: 'ganó', en: 'won' },

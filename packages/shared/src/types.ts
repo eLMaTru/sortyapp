@@ -14,6 +14,7 @@ export interface User {
   demoBalance: number;
   realBalance: number;
   walletAddress?: string; // Polygon address for withdrawals
+  savedPaymentDetails?: Record<string, WithdrawalPaymentDetails>;
   createdAt: string;
   updatedAt: string;
 }
@@ -27,6 +28,7 @@ export interface UserPublic {
   demoBalance: number;
   realBalance: number;
   walletAddress?: string;
+  savedPaymentDetails?: Record<string, WithdrawalPaymentDetails>;
   createdAt: string;
 }
 
@@ -120,17 +122,27 @@ export interface DrawTemplate {
 
 // ─── Withdrawals ─────────────────────────────────────────────────────────────
 export type WithdrawalStatus = 'PENDING' | 'SENT' | 'COMPLETED';
+export type WithdrawalMethod = 'POLYGON' | 'BINANCE' | 'PAYPAL' | 'BANK_POPULAR' | 'BANK_BHD';
+
+export interface WithdrawalPaymentDetails {
+  binancePayId?: string;
+  paypalEmail?: string;
+  accountNumber?: string;
+  accountHolder?: string;
+}
 
 export interface Withdrawal {
   withdrawalId: string;
   userId: string;
+  method: WithdrawalMethod;
   amountCredits: number;
   amountUSDC: number;
   feeUSDC: number;
   netUSDC: number;
   status: WithdrawalStatus;
   txHash?: string;
-  walletAddress: string;
+  walletAddress?: string;       // for POLYGON method
+  paymentDetails?: WithdrawalPaymentDetails; // for non-POLYGON methods
   createdAt: string;
   updatedAt: string;
 }
@@ -165,6 +177,7 @@ export interface RankingEntry {
 
 // ─── Admin Metrics ──────────────────────────────────────────────────────────
 export interface AdminMetrics {
+  mode?: WalletMode;
   totalUsers: number;
   totalDrawsCompleted: number;
   totalDrawsOpen: number;
