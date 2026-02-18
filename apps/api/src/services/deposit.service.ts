@@ -103,6 +103,87 @@ class DepositService {
     return deposit;
   }
 
+  /**
+   * Create a MetaMask deposit that's already verified on-chain.
+   * Skips PENDING state — goes straight to APPROVED since blockchain is source of truth.
+   */
+  async createVerifiedMetaMask(
+    userId: string,
+    username: string,
+    amountUSDC: number,
+    txHash: string,
+    senderAddress: string,
+  ): Promise<DepositRequest> {
+    await this.checkDailyLimit(userId, amountUSDC);
+    await this.checkDuplicateTxHash(txHash);
+
+    const now = new Date().toISOString();
+    const amountCredits = Math.round(amountUSDC * CREDITS_PER_USDC);
+
+    const deposit: DepositRequest = {
+      depositRequestId: uuid(),
+      userId,
+      username,
+      method: 'METAMASK',
+      amountUSDC,
+      amountCredits,
+      code: `MM-${txHash.slice(2, 10).toUpperCase()}`,
+      txHash,
+      senderAddress,
+      status: 'APPROVED',
+      reviewedBy: 'SYSTEM_AUTO',
+      reviewedAt: now,
+      createdAt: now,
+      updatedAt: now,
+      expiresAt: now,
+    };
+
+    await ddb.send(new PutCommand({ TableName: tables.depositRequests, Item: deposit }));
+
+    // Credit user balance
+    const newBalance = await walletService.creditBalance(deposit.userId, 'REAL', deposit.amountCredits);
+    await walletService.recordTransaction({
+      userId: deposit.userId,
+      walletMode: 'REAL',
+      type: 'DEPOSIT',
+      amount: deposit.amountCredits,
+      balanceAfter: newBalance,
+      referenceId: deposit.depositRequestId,
+      description: `MetaMask USDC deposit: ${deposit.amountUSDC} USDC (tx: ${txHash.slice(0, 10)}...)`,
+    });
+
+    await this.trackDailyDeposit(deposit.userId, deposit.amountUSDC);
+    await this.handleFirstDeposit(deposit.userId);
+
+    return deposit;
+  }
+
+  private async checkDuplicateTxHash(txHash: string): Promise<void> {
+    // Fast check via code-index GSI (code derived from txHash)
+    const codeResult = await ddb.send(new QueryCommand({
+      TableName: tables.depositRequests,
+      IndexName: 'code-index',
+      KeyConditionExpression: 'code = :code',
+      ExpressionAttributeValues: { ':code': `MM-${txHash.slice(2, 10).toUpperCase()}` },
+    }));
+    if (codeResult.Items && codeResult.Items.length > 0) {
+      throw new AppError(400, 'This transaction has already been used for a deposit');
+    }
+
+    // Secondary check: scan APPROVED deposits filtering by txHash
+    const scanResult = await ddb.send(new QueryCommand({
+      TableName: tables.depositRequests,
+      IndexName: 'status-index',
+      KeyConditionExpression: '#status = :approved',
+      FilterExpression: 'txHash = :hash',
+      ExpressionAttributeNames: { '#status': 'status' },
+      ExpressionAttributeValues: { ':approved': 'APPROVED', ':hash': txHash },
+    }));
+    if (scanResult.Items && scanResult.Items.length > 0) {
+      throw new AppError(400, 'This transaction has already been used for a deposit');
+    }
+  }
+
   async reject(depositRequestId: string, adminUserId: string, adminNote?: string): Promise<DepositRequest> {
     const now = new Date().toISOString();
     let result;

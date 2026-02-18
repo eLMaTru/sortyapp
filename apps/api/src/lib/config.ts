@@ -18,6 +18,11 @@ export const config = {
 
   sesFromEmail: process.env.SES_FROM_EMAIL || 'noreply@sortyapp.com',
 
+  // Polygon / MetaMask
+  polygonRpcUrl: process.env.POLYGON_RPC_URL || 'https://polygon-rpc.com',
+  polygonUsdcContract: process.env.POLYGON_USDC_CONTRACT || '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',
+  receiverWalletAddress: process.env.RECEIVER_WALLET_ADDRESS || '0x1b5Ed43318DBeB3EC9d4C206A390B65fF5C8454a',
+
   referralBonusCredits: parseInt(process.env.REFERRAL_BONUS_CREDITS || '500', 10),
   minDepositCredits: parseInt(process.env.MIN_DEPOSIT_CREDITS || '1000', 10),
   maxDailyDepositCredits: parseInt(process.env.MAX_DAILY_DEPOSIT_CREDITS || '30000', 10),

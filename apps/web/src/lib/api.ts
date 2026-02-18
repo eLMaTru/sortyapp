@@ -74,6 +74,8 @@ export const api = {
     createDepositRequest: (data: { method: string; amountUSDC: number; reference?: string; code?: string }) =>
       request<any>('/wallet/deposit-request', { method: 'POST', body: JSON.stringify(data) }),
     depositRequests: () => request<any[]>('/wallet/deposit-requests'),
+    verifyMetaMaskDeposit: (data: { txHash: string; amountUSDC: number; senderAddress: string }) =>
+      request<any>('/wallet/deposit-metamask', { method: 'POST', body: JSON.stringify(data) }),
   },
 
   admin: {

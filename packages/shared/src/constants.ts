@@ -69,6 +69,21 @@ export const DEPOSIT_METHODS = [
   },
 ] as const;
 
+// ─── MetaMask / Polygon USDC ────────────────────────────────────────────────
+export const POLYGON_CHAIN_ID = 137;
+export const POLYGON_CHAIN_ID_HEX = '0x89';
+export const POLYGON_USDC_CONTRACT = '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359';
+export const POLYGON_USDC_DECIMALS = 6;
+export const RECEIVER_WALLET_ADDRESS = '0x1b5Ed43318DBeB3EC9d4C206A390B65fF5C8454a';
+export const POLYGON_RPC_URL_DEFAULT = 'https://polygon-rpc.com';
+export const POLYGON_NETWORK_PARAMS = {
+  chainId: '0x89',
+  chainName: 'Polygon Mainnet',
+  nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
+  rpcUrls: ['https://polygon-rpc.com'],
+  blockExplorerUrls: ['https://polygonscan.com'],
+};
+
 // Referral
 export const REFERRAL_BONUS_CREDITS = 500; // $5
 

@@ -7,6 +7,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '@/lib/api';
 import { CREDITS_PER_USDC } from '@sortyapp/shared';
 
+type MetaMaskStep = 'connect' | 'amount' | 'sending' | 'verifying' | 'done';
+
 type DepositMethod = {
   method: string;
   label: string;
@@ -30,7 +32,7 @@ function generateDepositCode(): string {
 }
 
 export default function DepositPage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { t } = useLanguage();
   const [methods, setMethods] = useState<DepositMethod[]>([]);
   const [dopRate, setDopRate] = useState(0);
@@ -43,6 +45,14 @@ export default function DepositPage() {
   const [success, setSuccess] = useState(false);
   const [myRequests, setMyRequests] = useState<any[]>([]);
   const [showRequests, setShowRequests] = useState(false);
+
+  // MetaMask state
+  const [isMetaMask, setIsMetaMask] = useState(false);
+  const [mmAddress, setMmAddress] = useState<string | null>(null);
+  const [mmStep, setMmStep] = useState<MetaMaskStep>('connect');
+  const [usdcBalance, setUsdcBalance] = useState<number | null>(null);
+  const [mmError, setMmError] = useState('');
+  const [txHash, setTxHash] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -100,6 +110,66 @@ export default function DepositPage() {
     }
   };
 
+  const handleMetaMaskConnect = async () => {
+    setMmError('');
+    try {
+      const mm = await import('@/lib/metamask');
+      if (!mm.isMetaMaskInstalled()) {
+        setMmError(t('deposit.metamaskNotInstalled'));
+        return;
+      }
+      const address = await mm.connectMetaMask();
+      const onPolygon = await mm.isOnPolygon();
+      if (!onPolygon) await mm.switchToPolygon();
+      setMmAddress(address);
+      try {
+        const balance = await mm.getUSDCBalance(address);
+        setUsdcBalance(balance);
+      } catch { setUsdcBalance(null); }
+      setMmStep('amount');
+    } catch (err: any) {
+      setMmError(err.message || 'Failed to connect MetaMask');
+    }
+  };
+
+  const handleMetaMaskSend = async () => {
+    setMmError('');
+    const amountNum = parseFloat(amount);
+    if (isNaN(amountNum) || amountNum < 5 || amountNum > 100) {
+      setMmError(`${t('deposit.min')} / ${t('deposit.max')}`);
+      return;
+    }
+    if (usdcBalance !== null && amountNum > usdcBalance) {
+      setMmError(t('deposit.metamaskInsufficientUsdc'));
+      return;
+    }
+
+    setMmStep('sending');
+    try {
+      const mm = await import('@/lib/metamask');
+      const onPolygon = await mm.isOnPolygon();
+      if (!onPolygon) await mm.switchToPolygon();
+
+      const hash = await mm.sendUSDCTransfer(amountNum);
+      setTxHash(hash);
+      setMmStep('verifying');
+
+      await api.wallet.verifyMetaMaskDeposit({
+        txHash: hash,
+        amountUSDC: amountNum,
+        senderAddress: mmAddress!,
+      });
+
+      await refreshUser();
+      const updated = await api.wallet.depositRequests();
+      setMyRequests(updated);
+      setMmStep('done');
+    } catch (err: any) {
+      setMmError(err.message || 'Transaction failed');
+      setMmStep('amount');
+    }
+  };
+
   const isDOP = selectedMethod?.currency === 'DOP';
   const dopAmount = isDOP && amount && dopRate > 0
     ? (parseFloat(amount) * dopRate).toFixed(2)
@@ -121,10 +191,33 @@ export default function DepositPage() {
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">{t('deposit.subtitle')}</p>
 
       {/* Method selection */}
-      {!selectedMethod && (
+      {!selectedMethod && !isMetaMask && (
         <>
           <h2 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">{t('deposit.selectMethod')}</h2>
           <div className="grid gap-3">
+            {/* MetaMask option */}
+            <button
+              onClick={() => {
+                setIsMetaMask(true);
+                setSelectedMethod(null);
+                setMmStep('connect');
+                setMmError('');
+                setMmAddress(null);
+                setUsdcBalance(null);
+                setTxHash('');
+                setAmount('');
+              }}
+              className="text-left p-4 bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 hover:border-orange-500 dark:hover:border-orange-500 transition-colors"
+            >
+              <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <span className="text-xl">🦊</span>
+                MetaMask (USDC - Polygon)
+              </div>
+              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {t('deposit.metamaskHint')}
+              </div>
+            </button>
+
             {methods.map((m) => {
               if (m.currency === 'DOP' && dopRate <= 0) return null;
               return (
@@ -350,6 +443,136 @@ export default function DepositPage() {
             </form>
           </div>
         </>
+      )}
+
+      {/* MetaMask flow */}
+      {isMetaMask && mmStep !== 'done' && (
+        <>
+          <button
+            onClick={() => { setIsMetaMask(false); setMmError(''); }}
+            className="text-sm text-brand-500 hover:text-brand-600 mb-4 inline-block"
+          >
+            &larr; {t('deposit.back')}
+          </button>
+
+          <h2 className="font-semibold text-lg mb-3 text-gray-900 dark:text-white flex items-center gap-2">
+            <span className="text-xl">🦊</span> MetaMask (USDC - Polygon)
+          </h2>
+
+          {mmError && <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm p-3 rounded mb-3">{mmError}</div>}
+
+          {/* Step 1: Connect Wallet */}
+          {mmStep === 'connect' && (
+            <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-5">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{t('deposit.metamaskConnect')}</p>
+              <button
+                onClick={handleMetaMaskConnect}
+                className="w-full bg-orange-500 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-orange-600"
+              >
+                {t('deposit.metamaskConnectBtn')}
+              </button>
+            </div>
+          )}
+
+          {/* Step 2: Enter Amount */}
+          {mmStep === 'amount' && (
+            <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-5 space-y-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500 dark:text-gray-400">{t('deposit.metamaskWallet')}</span>
+                <span className="font-mono text-xs text-gray-700 dark:text-gray-300">{mmAddress?.slice(0, 6)}...{mmAddress?.slice(-4)}</span>
+              </div>
+              {usdcBalance !== null && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500 dark:text-gray-400">{t('deposit.metamaskBalance')}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">{usdcBalance.toFixed(2)} USDC</span>
+                </div>
+              )}
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">{t('deposit.amount')}</label>
+                <input
+                  type="number"
+                  min="5"
+                  max="100"
+                  step="0.01"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="w-full border border-gray-300 dark:border-surface-dark-3 dark:bg-surface-dark rounded px-3 py-2 text-sm dark:text-white"
+                  placeholder="5 - 100"
+                />
+                <div className="flex justify-between mt-1">
+                  <span className="text-xs text-gray-400">{t('deposit.min')} / {t('deposit.max')}</span>
+                  <span className="text-xs text-gray-400">{t('deposit.dailyLimit')}</span>
+                </div>
+                {amount && parseFloat(amount) >= 5 && (
+                  <p className="text-sm text-brand-500 font-medium mt-2">
+                    {t('deposit.creditsPreview')}: {(parseFloat(amount) * CREDITS_PER_USDC).toLocaleString()} SC
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={handleMetaMaskSend}
+                disabled={!amount || parseFloat(amount) < 5 || parseFloat(amount) > 100}
+                className="w-full bg-brand-500 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-brand-600 disabled:opacity-50"
+              >
+                {t('deposit.metamaskSendBtn')}
+              </button>
+            </div>
+          )}
+
+          {/* Step 3: Sending */}
+          {mmStep === 'sending' && (
+            <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-5 text-center">
+              <div className="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-3"></div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('deposit.metamaskSending')}</p>
+            </div>
+          )}
+
+          {/* Step 4: Verifying */}
+          {mmStep === 'verifying' && (
+            <div className="bg-white dark:bg-surface-dark-2 rounded-lg border border-gray-200 dark:border-surface-dark-3 p-5 text-center">
+              <div className="animate-spin w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full mx-auto mb-3"></div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('deposit.metamaskVerifying')}</p>
+              {txHash && (
+                <a
+                  href={`https://polygonscan.com/tx/${txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-brand-500 hover:underline mt-2 inline-block"
+                >
+                  {t('deposit.metamaskViewTx')}
+                </a>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* MetaMask success */}
+      {isMetaMask && mmStep === 'done' && (
+        <div>
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-4 text-center">
+            <div className="text-lg font-semibold text-green-700 dark:text-green-300 mb-2">{t('deposit.metamaskSuccess')}</div>
+            <div className="text-sm text-green-600 dark:text-green-400 mb-2">
+              {amount} USDC = {(parseFloat(amount) * CREDITS_PER_USDC).toLocaleString()} SC
+            </div>
+            {txHash && (
+              <a
+                href={`https://polygonscan.com/tx/${txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-brand-500 hover:underline"
+              >
+                {t('deposit.metamaskViewTx')}
+              </a>
+            )}
+          </div>
+          <button
+            onClick={() => { setIsMetaMask(false); setMmStep('connect'); setAmount(''); setTxHash(''); }}
+            className="w-full bg-brand-500 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-brand-600"
+          >
+            {t('deposit.newRequest')}
+          </button>
+        </div>
       )}
 
       {/* Success confirmation */}

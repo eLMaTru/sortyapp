@@ -253,6 +253,41 @@ const translations = {
     en: 'Your request has been registered. Once you make the payment with the code in the memo, an admin will verify it and credit your account.',
   },
 
+  // ───────── MetaMask Deposit ─────────
+  'deposit.metamaskHint': {
+    es: 'Paga directo desde tu wallet. Automático, sin esperar aprobación.',
+    en: 'Pay directly from your wallet. Automatic, no approval needed.',
+  },
+  'deposit.metamaskConnect': {
+    es: 'Conecta tu wallet MetaMask para enviar USDC en la red Polygon.',
+    en: 'Connect your MetaMask wallet to send USDC on the Polygon network.',
+  },
+  'deposit.metamaskConnectBtn': { es: 'Conectar MetaMask', en: 'Connect MetaMask' },
+  'deposit.metamaskWallet': { es: 'Wallet conectada', en: 'Connected wallet' },
+  'deposit.metamaskBalance': { es: 'Balance USDC', en: 'USDC Balance' },
+  'deposit.metamaskSendBtn': { es: 'Enviar USDC', en: 'Send USDC' },
+  'deposit.metamaskSending': {
+    es: 'Confirma la transacción en MetaMask y espera la confirmación...',
+    en: 'Confirm the transaction in MetaMask and wait for confirmation...',
+  },
+  'deposit.metamaskVerifying': {
+    es: 'Verificando transacción en la blockchain...',
+    en: 'Verifying transaction on the blockchain...',
+  },
+  'deposit.metamaskViewTx': { es: 'Ver en PolygonScan', en: 'View on PolygonScan' },
+  'deposit.metamaskSuccess': {
+    es: 'Depósito completado. Tus créditos han sido acreditados.',
+    en: 'Deposit completed. Your credits have been credited.',
+  },
+  'deposit.metamaskNotInstalled': {
+    es: 'MetaMask no está instalado. Instálalo desde metamask.io',
+    en: 'MetaMask is not installed. Install it from metamask.io',
+  },
+  'deposit.metamaskInsufficientUsdc': {
+    es: 'Balance USDC insuficiente en tu wallet.',
+    en: 'Insufficient USDC balance in your wallet.',
+  },
+
   // ───────── Withdrawal Methods ─────────
   'withdraw.selectMethod': { es: 'Método de Retiro', en: 'Withdrawal Method' },
   'withdraw.fillRequired': { es: 'Completa todos los campos requeridos', en: 'Fill all required fields' },

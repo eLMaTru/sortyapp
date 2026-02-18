@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sortyapp-v1';
+const CACHE_NAME = 'sortyapp-v2';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

@@ -189,8 +189,8 @@ export interface AdminMetrics {
   recentUsers: number; // last 24h
 }
 
-// ─── Deposit Requests (Manual Recharge) ─────────────────────────────────────
-export type DepositMethod = 'BINANCE' | 'PAYPAL' | 'BANK_POPULAR' | 'BANK_BHD';
+// ─── Deposit Requests (Manual Recharge + MetaMask) ──────────────────────────
+export type DepositMethod = 'BINANCE' | 'PAYPAL' | 'BANK_POPULAR' | 'BANK_BHD' | 'METAMASK';
 export type DepositRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
 
 export interface DepositMethodInfo {
@@ -210,6 +210,8 @@ export interface DepositRequest {
   amountCredits: number;
   code: string;           // unique code e.g. DEP-A3F2 for payment memo
   reference?: string;     // user-provided: tx hash, confirmation #, etc.
+  txHash?: string;        // Polygon tx hash for METAMASK deposits
+  senderAddress?: string; // User's wallet address for METAMASK deposits
   status: DepositRequestStatus;
   adminNote?: string;
   reviewedBy?: string;

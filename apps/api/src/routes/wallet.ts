@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { GetCommand } from '@aws-sdk/lib-dynamodb';
-import { WithdrawalRequestSchema, CreateDepositRequestSchema, DEPOSIT_METHODS } from '@sortyapp/shared';
+import { WithdrawalRequestSchema, CreateDepositRequestSchema, VerifyMetaMaskDepositSchema, DEPOSIT_METHODS } from '@sortyapp/shared';
 import { walletService } from '../services/wallet.service';
 import { depositService } from '../services/deposit.service';
 import { userService } from '../services/user.service';
+import { polygonService } from '../services/polygon.service';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import { ddb, tables } from '../lib/dynamo';
 
@@ -101,6 +102,33 @@ router.get('/deposit-requests', authenticate, async (req: AuthRequest, res, next
   try {
     const deposits = await depositService.getUserDeposits(req.user!.userId);
     res.json({ success: true, data: deposits });
+  } catch (err) { next(err); }
+});
+
+// ─── MetaMask on-chain deposit verification ─────────────────────────────────
+router.post('/deposit-metamask', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const body = VerifyMetaMaskDepositSchema.parse(req.body);
+    const user = await userService.getById(req.user!.userId);
+    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+
+    // Verify the on-chain transaction
+    const verified = await polygonService.verifyUSDCTransfer(
+      body.txHash,
+      body.amountUSDC,
+      body.senderAddress,
+    );
+
+    // Create deposit record (APPROVED) + credit balance
+    const deposit = await depositService.createVerifiedMetaMask(
+      user.userId,
+      user.username,
+      verified.amountUSDC,
+      body.txHash,
+      body.senderAddress,
+    );
+
+    res.status(201).json({ success: true, data: deposit });
   } catch (err) { next(err); }
 });
 

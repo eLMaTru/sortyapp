@@ -101,10 +101,17 @@ export const SendChatMessageSchema = z.object({
 
 // ─── Deposit Requests (Manual Recharge) ─────────────────────────────────────
 export const CreateDepositRequestSchema = z.object({
-  method: z.enum(['BINANCE', 'PAYPAL', 'BANK_POPULAR', 'BANK_BHD']),
+  method: z.enum(['BINANCE', 'PAYPAL', 'BANK_POPULAR', 'BANK_BHD', 'METAMASK']),
   amountUSDC: z.number().min(5).max(100),
   reference: z.string().max(200).optional(),
   code: z.string().max(20).optional(),
+});
+
+// ─── MetaMask On-Chain Deposit Verification ─────────────────────────────────
+export const VerifyMetaMaskDepositSchema = z.object({
+  txHash: z.string().regex(/^0x[0-9a-fA-F]{64}$/, 'Invalid transaction hash'),
+  amountUSDC: z.number().min(5).max(100),
+  senderAddress: z.string().regex(/^0x[0-9a-fA-F]{40}$/, 'Invalid wallet address'),
 });
 
 export const ReviewDepositRequestSchema = z.object({
